@@ -1,0 +1,41 @@
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+backend/venv/
+
+# SQLite databases (runtime data, never commit)
+*.db
+*.sqlite
+*.sqlite3
+data/
+backend/data/
+
+# Node
+node_modules/
+dist/
+client/dist/
+npm-debug.log*
+
+# Logs
+*.log
+uvicorn.log
+uvicorn.err.log
+dev.log
+dev.err.log
+
+# Legacy prototype (server/ is abandoned; keep it out of the repo)
+server/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

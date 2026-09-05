@@ -1,0 +1,56 @@
+# FinanceManager production compose — sits on the SAME VPS as ReplyPilot.
+# ReplyPilot owns host ports 8000 (backend) and 4000 (frontend) plus mysql/redis.
+# FinanceManager therefore uses 8001 (backend) and 4001 (frontend) so the two
+# apps never collide. Both bind to 127.0.0.1 so they're only reachable through
+# the host nginx edge (which serves finance.pilotmessenger.com), never directly
+# from the internet.
+#
+# Env vars are injected from the repo-root .env via `env_file` (WARN-NOT-FAIL if
+# missing, mirroring ReplyPilot). `ENVIRONMENT=production` + a real
+# APP_PASSWORD/SESSION_SECRET come from that .env — see docs/DEPLOYMENT.md.
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finance_backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8001"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DATABASE_URL=sqlite:///./data/finance.db
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://finance.pilotmessenger.com}
+    volumes:
+      - finance_db:/app/data
+    networks:
+      - finance_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: finance_frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4001:80"
+    depends_on:
+      - backend
+    networks:
+      - finance_network
+
+volumes:
+  finance_db:
+
+networks:
+  finance_network:
+    driver: bridge
