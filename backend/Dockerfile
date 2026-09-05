@@ -14,7 +14,6 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
-COPY alembic ./alembic
 
 # Run as a non-root user so the container can't operate as root.
 RUN mkdir -p /app/data \
