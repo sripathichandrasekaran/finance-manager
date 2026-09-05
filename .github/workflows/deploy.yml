@@ -35,5 +35,5 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
-            cd ~/financemanager
+            cd ~/finance-manager
             ./deploy.sh
