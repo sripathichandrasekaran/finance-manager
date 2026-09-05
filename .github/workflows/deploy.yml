@@ -27,13 +27,24 @@ jobs:
       - name: Verify frontend image builds
         run: docker build -t finance-frontend:ci ./client
 
+      - name: Write SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.2.0
+        uses: nick-fields/retry@v3
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          script: |
-            cd ~/finance-manager
-            ./deploy.sh
+          max_attempts: 4
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=20 -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" 'cd ~/finance-manager && ./deploy.sh'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
