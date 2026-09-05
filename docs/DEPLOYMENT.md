@@ -47,13 +47,23 @@ git clone git@github.com:<org>/finance-manager.git
 cd finance-manager
 ```
 
-Use **SSH** for the remote — `deploy.sh` does a `git pull origin main`. The VPS
-already has a GitHub SSH deploy key configured for ReplyPilot; add a second
-(read-only) deploy key for this repo, or reuse the same key pair if it has
-repo access.
+Use **SSH** for the remote — `deploy.sh` does a `git pull origin main`. GitHub
+**deploy keys are per-repo**, so the key ReplyPilot uses cannot be reused here
+(GitHub rejects it with "key is already in use"). Generate a separate
+read-only deploy key for this repo:
 
 ```bash
-# Add the public key to GitHub → repo → Settings → Deploy keys (read-only)
+ssh-keygen -t ed25519 -f ~/.ssh/finance_deploy_key -N '' -C 'finance-manager-deploy'
+cat ~/.ssh/finance_deploy_key.pub   # paste into GitHub → repo → Settings → Deploy keys (Allow write access: NO)
+```
+
+Then clone and pin the repo to that key, so it never collides with ReplyPilot's
+key in `~/.ssh/config`:
+
+```bash
+git clone git@github.com:<org>/finance-manager.git
+cd finance-manager
+git config core.sshCommand "ssh -i /root/.ssh/finance_deploy_key -o IdentitiesOnly=yes"
 ssh -T git@github.com   # greet check
 ```
 
@@ -165,7 +175,8 @@ The repo ships `.github/workflows/deploy.yml`. On every push to `main` (and via
 manual "Run workflow" in the Actions tab) it:
 
 1. Verifies both Docker images still build.
-2. SSHes into the VPS and runs `./deploy.sh`.
+2. Writes `DEPLOY_KEY` to `~/.ssh/deploy_key` and, via the OpenSSH client
+   (with `nick-fields/retry`, 4 attempts), runs `bash deploy.sh` on the VPS.
 
 Repository secrets required (Settings → Secrets and variables → Actions):
 
