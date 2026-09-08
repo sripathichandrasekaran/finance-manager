@@ -27,12 +27,13 @@ import Tooltip from "@mui/material/Tooltip";
 import Alert from "@mui/material/Alert";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import EmptyState from "../components/EmptyState.jsx";
 import DateField from "../components/DateField.jsx";
 
-import { fetchTransactions, createTransaction, deleteTransaction } from "../store/slices/transactionsSlice.js";
+import { fetchTransactions, createTransaction, updateTransaction, deleteTransaction } from "../store/slices/transactionsSlice.js";
 import { fetchStats } from "../store/slices/dashboardSlice.js";
 import { fetchCompanies } from "../store/slices/companiesSlice.js";
 import { fetchProjects } from "../store/slices/projectsSlice.js";
@@ -54,19 +55,20 @@ export default function Transactions() {
   const navigate = useNavigate();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const formik = useFormik({
-initialValues: {
-        amount: "",
-        type: "debit",
-        category: "Food",
-        company_id: "",
-        project_id: "",
-        description: "",
-        date: todayISO(),
-      },
+    initialValues: {
+      amount: "",
+      type: "debit",
+      category: "Food",
+      company_id: "",
+      project_id: "",
+      description: "",
+      date: todayISO(),
+    },
     validationSchema: Yup.object({
       amount: Yup.number()
         .typeError("Enter a valid amount")
@@ -79,12 +81,23 @@ initialValues: {
         company_id: values.company_id ? Number(values.company_id) : null,
         project_id: values.project_id ? Number(values.project_id) : null,
       };
-      const result = await dispatch(createTransaction(payload));
-      if (!result.error) {
-        setDialogOpen(false);
-        formik.resetForm();
-        dispatch(fetchTransactions({ page: page + 1, page_size: rowsPerPage }));
-        dispatch(fetchStats());
+      if (editing) {
+        const result = await dispatch(updateTransaction({ id: editing.id, ...payload }));
+        if (!result.error) {
+          setDialogOpen(false);
+          setEditing(null);
+          formik.resetForm();
+          dispatch(fetchTransactions({ page: page + 1, page_size: rowsPerPage }));
+          dispatch(fetchStats());
+        }
+      } else {
+        const result = await dispatch(createTransaction(payload));
+        if (!result.error) {
+          setDialogOpen(false);
+          formik.resetForm();
+          dispatch(fetchTransactions({ page: page + 1, page_size: rowsPerPage }));
+          dispatch(fetchStats());
+        }
       }
     },
   });
@@ -108,10 +121,28 @@ initialValues: {
     }
   };
 
+  const openEdit = (t) => {
+    setEditing(t);
+    formik.setValues({
+      amount: t.amount,
+      type: t.type,
+      category: t.category,
+      company_id: t.company_id || "",
+      project_id: t.project_id || "",
+      description: t.description || "",
+      date: t.date,
+    });
+    formik.setErrors({});
+    formik.setTouched({});
+    setDialogOpen(true);
+  };
+
   const handleFormClose = () => {
     setDialogOpen(false);
+    setEditing(null);
     formik.resetForm();
     formik.setErrors({});
+    formik.setTouched({});
   };
 
   const companyName = (id) => companies.find((c) => c.id === id)?.name || "";
@@ -203,6 +234,11 @@ initialValues: {
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
+                          <Tooltip title="Edit">
+                            <IconButton size="small" onClick={() => openEdit(t)} color="primary">
+                              <EditOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Delete">
                             <IconButton size="small" onClick={() => handleDelete(t.id)} color="error">
                               <DeleteOutlineIcon fontSize="small" />
@@ -230,7 +266,7 @@ initialValues: {
       </Card>
 
       <Dialog open={dialogOpen} onClose={handleFormClose} maxWidth="xs" fullWidth>
-        <DialogTitle>Add Transaction</DialogTitle>
+        <DialogTitle>{editing ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
             {error && <Alert severity="error">{typeof error === 'string' ? error : 'An error occurred'}</Alert>}

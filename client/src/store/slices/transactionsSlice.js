@@ -44,6 +44,18 @@ export const deleteTransaction = createAsyncThunk(
   }
 );
 
+export const updateTransaction = createAsyncThunk(
+  "transactions/update",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.put(`/transactions/${payload.id}`, payload);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.detail || "Failed to update transaction");
+    }
+  }
+);
+
 const transactionsSliceInstance = createSlice({
   name: "transactions",
   initialState,
@@ -61,6 +73,10 @@ const transactionsSliceInstance = createSlice({
       .addCase(createTransaction.rejected, (state, action) => { state.error = action.payload; })
       .addCase(deleteTransaction.fulfilled, (state, action) => {
         state.items = state.items.filter((t) => t.id !== action.payload);
+      })
+      .addCase(updateTransaction.fulfilled, (state, action) => {
+        const idx = state.items.findIndex((t) => t.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
       });
   },
 });
