@@ -48,7 +48,7 @@ export const updateTransaction = createAsyncThunk(
   "transactions/update",
   async (payload, { rejectWithValue }) => {
     try {
-      const { data } = await axios.put(`/transactions/${payload.id}`, payload);
+      const { data } = await axios.patch(`/transactions/${payload.id}`, payload);
       return data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.detail || "Failed to update transaction");
