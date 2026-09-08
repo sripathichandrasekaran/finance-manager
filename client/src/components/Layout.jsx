@@ -232,6 +232,7 @@ function SidebarContent({ onNavigate }) {
 export default function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   useRealtimeNotifications();
+  const { isDark, toggleTheme } = useThemeMode();
   const location = useLocation();
 
   const closeMobile = () => setMobileOpen(false);
@@ -350,6 +351,20 @@ export default function Layout({ children }) {
             {pageTitle}
           </Typography>
           <Box sx={{ flex: 1 }} />
+          <IconButton
+            onClick={toggleTheme}
+            aria-label="Toggle theme mode"
+            size="small"
+            sx={{
+              display: { xs: "flex", md: "none" },
+              color: "var(--fm-text-primary)",
+              width: 36,
+              height: 36,
+              "&:hover": { bgcolor: "var(--fm-bg-hover)" },
+            }}
+          >
+            {isDark ? <LightModeIcon sx={{ fontSize: 20 }} /> : <DarkModeIcon sx={{ fontSize: 20 }} />}
+          </IconButton>
           <NotificationBell />
           <ProfileMenu />
         </Box>
