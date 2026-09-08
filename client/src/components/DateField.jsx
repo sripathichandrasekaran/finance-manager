@@ -1,5 +1,5 @@
 import React from "react";
-import DatePicker from "react-multi-date-picker";
+import DatePicker, { DateObject } from "react-multi-date-picker";
 import CalendarIcon from "@mui/icons-material/CalendarMonth";
 
 const FMT = "YYYY-MM-DD";
@@ -27,9 +27,9 @@ export default function DateField({
   disabled = false,
   sx = {},
 }) {
-  const parseSingle = (v) => (v ? new DatePicker.DateObject(v) : undefined);
+  const parseSingle = (v) => (v ? new DateObject(v) : undefined);
   const parseArray = (v) =>
-    Array.isArray(v) ? v.map((d) => (d ? new DatePicker.DateObject(d) : null)) : [];
+    Array.isArray(v) ? v.map((d) => (d ? new DateObject(d) : null)) : [];
 
   const toSingle = (val) => (val ? val.format(FMT) : "");
   const toArray = (val) =>
