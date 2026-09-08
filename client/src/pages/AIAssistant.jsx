@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
@@ -39,6 +40,14 @@ import PieChartIcon from "@mui/icons-material/PieChart";
 import PageHeader from "../components/PageHeader.jsx";
 import StatCard from "../components/StatCard.jsx";
 import api from "../services/api.js";
+import { fetchStats } from "../store/slices/dashboardSlice.js";
+import { fetchTransactions } from "../store/slices/transactionsSlice.js";
+import { fetchSubscriptions } from "../store/slices/subscriptionsSlice.js";
+import { fetchBudgets } from "../store/slices/budgetsSlice.js";
+import { fetchCompanies } from "../store/slices/companiesSlice.js";
+import { fetchTimeEntries } from "../store/slices/timeEntriesSlice.js";
+import { fetchReminders } from "../store/slices/remindersSlice.js";
+import { currentMonthISO } from "../utils/timezone.js";
 
 // ---------------------------------------------------------------- markdown ---
 function renderInline(text) {
@@ -165,11 +174,35 @@ const STORAGE_KEY = "fm_ai_sessions";
 const ACTIVE_KEY = "fm_ai_active_id";
 const MAX_SESSIONS = 20;
 
+const MUTATION_MODULE_MAP = {
+  create_transaction: true, update_transaction: true, delete_transaction: true,
+  create_subscription: true, update_subscription: true, delete_subscription: true,
+  create_budget: true, update_budget: true, delete_budget: true,
+  create_company: true, update_company: true, delete_company: true,
+  create_time_entry: true, update_time_entry: true, delete_time_entry: true,
+  create_reminder: true, set_reminder_status: true,
+};
+
+function refreshStores(dispatch, actions) {
+  if (!actions?.length) return;
+  const hasMutation = actions.some((a) => MUTATION_MODULE_MAP[a.tool]);
+  if (!hasMutation) return;
+  const [year, month] = currentMonthISO().split("-").map(Number);
+  dispatch(fetchStats({ year, month }));
+  dispatch(fetchTransactions({ page_size: 300 }));
+  dispatch(fetchSubscriptions(false, { page_size: 300 }));
+  dispatch(fetchBudgets({ year, month, page_size: 300 }));
+  dispatch(fetchCompanies({ page_size: 300 }));
+  dispatch(fetchTimeEntries({ page_size: 300 }));
+  dispatch(fetchReminders({ page_size: 300 }));
+}
+
 function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export default function AIAssistant() {
+  const dispatch = useDispatch();
   const [aiStatus, setAiStatus] = useState({ loading: true, configured: false });
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -350,6 +383,7 @@ export default function AIAssistant() {
 
     try {
       const { data } = await api.post("/ai/agent-chat", { message: text, history });
+      refreshStores(dispatch, data.actions);
       setSessions((prev) =>
         prev.map((s) =>
           s.id === targetId

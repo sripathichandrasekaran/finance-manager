@@ -57,6 +57,7 @@ const transactionsSliceInstance = createSlice({
       .addCase(fetchTransactions.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchTransactions.fulfilled, (state, action) => { state.items = action.payload.data; state.total = action.payload.total; state.loading = false; })
       .addCase(fetchTransactions.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+      .addCase(createTransaction.fulfilled, (state, action) => { state.items.unshift(action.payload); })
       .addCase(createTransaction.rejected, (state, action) => { state.error = action.payload; })
       .addCase(deleteTransaction.fulfilled, (state, action) => {
         state.items = state.items.filter((t) => t.id !== action.payload);
