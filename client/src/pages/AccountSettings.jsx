@@ -24,7 +24,7 @@ import DevicesIcon from "@mui/icons-material/Devices";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import EmptyState from "../components/EmptyState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
-import { fetchSessions, revokeSession, logout } from "../store/slices/authSlice.js";
+import { fetchSessions, revokeSession, revokeAllSessions } from "../store/slices/authSlice.js";
 import { formatDateTime } from "../utils/timezone.js";
 import api from "../services/api.js";
 
@@ -247,7 +247,7 @@ export default function AccountSettings() {
               variant="outlined"
               color="error"
               startIcon={<LogoutIcon />}
-              onClick={() => dispatch(logout())}
+              onClick={() => dispatch(revokeAllSessions())}
               sx={{ textTransform: "none" }}
             >
               Log out everywhere

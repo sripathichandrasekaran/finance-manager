@@ -42,7 +42,7 @@ api.interceptors.response.use(
   (err) => {
     if (err.response && err.response.status === 401) {
       setToken("");
-      _store?.dispatch({ type: "auth/setUnauthenticated" });
+      _store?.dispatch({ type: "auth/reset" });
     }
     return Promise.reject(err);
   }

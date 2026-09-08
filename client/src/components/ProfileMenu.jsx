@@ -22,7 +22,7 @@ export default function ProfileMenu() {
 
   const handleLogout = () => {
     setAnchor(null);
-    dispatch(logout());
+    dispatch(logout()).then(() => navigate("/"));
   };
 
   return (

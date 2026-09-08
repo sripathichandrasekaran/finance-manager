@@ -80,6 +80,18 @@ def revoke_session(db: Session, token: str) -> bool:
     return True
 
 
+def revoke_all_sessions(db: Session, except_token: Optional[str] = None) -> int:
+    """Deactivate every active session. Returns the count revoked."""
+    q = db.query(LoginSession).filter(LoginSession.active == True)
+    if except_token:
+        q = q.filter(LoginSession.token != except_token)
+    rows = q.all()
+    for s in rows:
+        s.active = False
+    db.commit()
+    return len(rows)
+
+
 def list_sessions(db: Session, limit: int = 50) -> list[LoginSession]:
     return db.query(LoginSession).order_by(
         LoginSession.created_at.desc(), LoginSession.id.desc()

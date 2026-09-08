@@ -42,11 +42,26 @@ export const initializeAuth = createAsyncThunk(
   }
 );
 
-export const logout = createAsyncThunk("auth/logout", async () => {
+export const logout = createAsyncThunk("auth/logout", async (_, { dispatch }) => {
   try { await api.post("/auth/logout"); } catch (e) { /* ignore */ }
   setToken("");
+  dispatch({ type: "auth/reset" });
   return {};
 });
+
+export const revokeAllSessions = createAsyncThunk(
+  "auth/revokeAllSessions",
+  async (_, { dispatch, rejectWithValue }) => {
+    try {
+      await api.post("/auth/sessions/revoke-all");
+      setToken("");
+      dispatch({ type: "auth/reset" });
+      return {};
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.detail || "Failed to revoke sessions");
+    }
+  }
+);
 
 export const fetchSessions = createAsyncThunk(
   "auth/sessions",
@@ -79,7 +94,8 @@ const slice = createSlice({
   initialState,
   reducers: {
     clearError(s) { s.error = null; },
-    setUnauthenticated(s) { s.status = "unauthenticated"; s.token = ""; },
+    reset() { return { ...initialState, status: "unauthenticated" }; },
+    setUnauthenticated() { return { ...initialState, status: "unauthenticated" }; },
   },
   extraReducers: (b) => {
     b.addCase(initializeAuth.pending, (s) => { s.status = "loading"; })
@@ -100,7 +116,8 @@ const slice = createSlice({
         setToken(a.payload.token);
       })
       .addCase(login.rejected, (s, a) => { s.status = "unauthenticated"; s.error = a.payload; })
-      .addCase(logout.fulfilled, (s) => { s.token = ""; s.username = ""; s.status = "unauthenticated"; })
+      .addCase(logout.fulfilled, (s) => { return { ...initialState, status: "unauthenticated" }; })
+      .addCase(revokeAllSessions.fulfilled, (s) => { return { ...initialState, status: "unauthenticated" }; })
       .addCase(fetchSessions.fulfilled, (s, a) => { s.sessions = a.payload.data; s.sessionsTotal = a.payload.total; })
       .addCase(fetchSessions.rejected, (s, a) => { s.error = a.payload; })
       .addCase(revokeSession.fulfilled, (s, a) => {
@@ -111,5 +128,5 @@ const slice = createSlice({
   },
 });
 
-export const { clearError, setUnauthenticated } = slice.actions;
+export const { clearError, setUnauthenticated, reset } = slice.actions;
 export default slice.reducer;

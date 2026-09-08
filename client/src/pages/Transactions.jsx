@@ -30,6 +30,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import EmptyState from "../components/EmptyState.jsx";
+import DateField from "../components/DateField.jsx";
 
 import { fetchTransactions, createTransaction, deleteTransaction } from "../store/slices/transactionsSlice.js";
 import { fetchStats } from "../store/slices/dashboardSlice.js";
@@ -306,12 +307,10 @@ initialValues: {
               size="small"
               fullWidth
             />
-            <TextField
+            <DateField
               label="Date"
-              type="date"
-              {...formik.getFieldProps("date")}
-              InputLabelProps={{ shrink: true }}
-              size="small"
+              value={formik.values.date}
+              onChange={(val) => formik.setFieldValue("date", val)}
               fullWidth
             />
           </Box>

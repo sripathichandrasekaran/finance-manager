@@ -33,6 +33,7 @@ import LinkIcon from "@mui/icons-material/Link";
 import WorkIcon from "@mui/icons-material/Work";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import EmptyState from "../components/EmptyState.jsx";
+import DateField from "../components/DateField.jsx";
 
 import PageHeader from "../components/PageHeader.jsx";
 import StatCard from "../components/StatCard.jsx";
@@ -85,7 +86,14 @@ export default function Projects() {
       name: Yup.string().trim().required("Project name is required"),
       fixed_price: Yup.number().typeError("Enter a valid price").min(0, "Price must be 0 or more"),
       hourly_rate: Yup.number().typeError("Enter a valid rate").min(0, "Rate must be 0 or more"),
-      end_date: Yup.date().min(Yup.ref("start_date"), "End date must be after the start date"),
+      start_date: Yup.string().matches(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+      end_date: Yup.string()
+        .matches(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format")
+        .test("end-after-start", "End date must be after the start date", function (value) {
+          const { start_date } = this.parent;
+          if (!value || !start_date) return true;
+          return value >= start_date; // lexicographic works for YYYY-MM-DD
+        }),
     }),
     onSubmit: async (values) => {
       const payload = {
@@ -347,18 +355,18 @@ export default function Projects() {
                 helperText={formik.touched.hourly_rate && formik.errors.hourly_rate}
               />
             )}
-            <Box sx={{ display: "flex", gap: 1.5 }}>
-              <TextField label="Start date" type="date" fullWidth {...formik.getFieldProps("start_date")} InputLabelProps={{ shrink: true }} />
-              <TextField
-                label="End date"
-                type="date"
-                fullWidth
-                {...formik.getFieldProps("end_date")}
-                InputLabelProps={{ shrink: true }}
-                error={formik.touched.end_date && Boolean(formik.errors.end_date)}
-                helperText={formik.touched.end_date && formik.errors.end_date}
-              />
-            </Box>
+            <DateField
+              label="Project period"
+              value={[formik.values.start_date, formik.values.end_date]}
+              onChange={([start, end]) => {
+                formik.setFieldValue("start_date", start);
+                formik.setFieldValue("end_date", end);
+              }}
+              range
+              fullWidth
+              error={formik.touched.end_date && Boolean(formik.errors.end_date)}
+              helperText={formik.touched.end_date && formik.errors.end_date}
+            />
             <TextField
               select
               label="Status"

@@ -31,6 +31,7 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import EmptyState from "../components/EmptyState.jsx";
+import DateField from "../components/DateField.jsx";
 
 import {
   fetchTimeEntries,
@@ -278,13 +279,10 @@ export default function TimeTracking() {
               size="small"
               fullWidth
             />
-            <TextField
+            <DateField
               label="Date"
-              type="date"
               value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-              size="small"
+              onChange={(val) => setForm({ ...form, date: val })}
               fullWidth
             />
           </Box>

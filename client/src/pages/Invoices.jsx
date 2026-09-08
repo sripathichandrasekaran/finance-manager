@@ -48,6 +48,7 @@ import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import EmptyState from "../components/EmptyState.jsx";
+import DateField from "../components/DateField.jsx";
 import api from "../services/api.js";
 
 import PageHeader from "../components/PageHeader.jsx";
@@ -804,8 +805,18 @@ export default function Invoices() {
                 ))}
             </TextField>
             <Box sx={{ display: "flex", gap: 1.5 }}>
-              <TextField label="Issue date" type="date" fullWidth {...formik.getFieldProps("issue_date")} InputLabelProps={{ shrink: true }} />
-              <TextField label="Due date" type="date" fullWidth {...formik.getFieldProps("due_date")} InputLabelProps={{ shrink: true }} />
+              <DateField
+                label="Issue date"
+                value={formik.values.issue_date}
+                onChange={(val) => formik.setFieldValue("issue_date", val)}
+                fullWidth
+              />
+              <DateField
+                label="Due date"
+                value={formik.values.due_date}
+                onChange={(val) => formik.setFieldValue("due_date", val)}
+                fullWidth
+              />
             </Box>
 
             <Box>
@@ -987,12 +998,11 @@ export default function Invoices() {
               </TextField>
             </Box>
             <Box sx={{ display: "flex", gap: 1.5 }}>
-              <TextField
+              <DateField
                 label="Next generation date"
-                type="date"
+                value={recFormik.values.next_generation}
+                onChange={(val) => recFormik.setFieldValue("next_generation", val)}
                 fullWidth
-                {...recFormik.getFieldProps("next_generation")}
-                InputLabelProps={{ shrink: true }}
               />
               <TextField
                 label="Tax rate (%)"

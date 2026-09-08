@@ -29,6 +29,7 @@ import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import EmptyState from "../components/EmptyState.jsx";
+import DateField from "../components/DateField.jsx";
 
 import { fetchSubscriptions, createSubscription, updateSubscription, deleteSubscription } from "../store/slices/subscriptionsSlice.js";
 import { fetchCompanies } from "../store/slices/companiesSlice.js";
@@ -232,12 +233,10 @@ export default function Subscriptions() {
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
+            <DateField
               label="Next billing"
-              type="date"
               value={form.next_billing}
-              onChange={(e) => setForm({ ...form, next_billing: e.target.value })}
-              InputLabelProps={{ shrink: true }}
+              onChange={(val) => setForm({ ...form, next_billing: val })}
             />
             <TextField
               label="Remind days before"

@@ -32,6 +32,7 @@ import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import BusinessIcon from "@mui/icons-material/Business";
 import EmptyState from "../components/EmptyState.jsx";
+import DateField from "../components/DateField.jsx";
 
 import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "../store/slices/companiesSlice.js";
 import { fetchCompanyProjectReport } from "../store/slices/projectsSlice.js";
@@ -74,8 +75,14 @@ export default function Companies() {
       contact_email: Yup.string().email("Enter a valid email"),
       hourly_rate: Yup.number().typeError("Enter a valid rate").min(0, "Rate must be 0 or more"),
       fixed_price: Yup.number().typeError("Enter a valid price").min(0, "Price must be 0 or more"),
-      contract_end: Yup.date()
-        .min(Yup.ref("contract_start"), "End date must be after the start date"),
+      contract_start: Yup.string().matches(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+      contract_end: Yup.string()
+        .matches(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format")
+        .test("end-after-start", "End date must be after the start date", function (value) {
+          const { contract_start } = this.parent;
+          if (!value || !contract_start) return true;
+          return value >= contract_start;
+        }),
       payment_terms: Yup.string(),
     }),
     onSubmit: async (values) => {
@@ -426,13 +433,15 @@ export default function Companies() {
                 helperText={formik.touched.fixed_price && formik.errors.fixed_price}
               />
             )}
-            <TextField label="Contract Start" type="date" fullWidth {...formik.getFieldProps("contract_start")} InputLabelProps={{ shrink: true }} />
-            <TextField
-              label="Contract End"
-              type="date"
+            <DateField
+              label="Contract period"
+              value={[formik.values.contract_start, formik.values.contract_end]}
+              onChange={([start, end]) => {
+                formik.setFieldValue("contract_start", start);
+                formik.setFieldValue("contract_end", end);
+              }}
+              range
               fullWidth
-              {...formik.getFieldProps("contract_end")}
-              InputLabelProps={{ shrink: true }}
               error={formik.touched.contract_end && Boolean(formik.errors.contract_end)}
               helperText={formik.touched.contract_end && formik.errors.contract_end}
             />

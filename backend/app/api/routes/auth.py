@@ -122,3 +122,14 @@ def revoke(session_id: int, credentials: HTTPAuthorizationCredentials = Depends(
     s.active = False
     db.commit()
     return {"success": True}
+
+
+@router.post("/sessions/revoke-all")
+def revoke_all(credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+               db: Session = Depends(get_db)):
+    """Deactivate every session except the current one, then log out."""
+    token = _token_from(credentials)
+    if token:
+        auth_service.revoke_all_sessions(db, except_token=token)
+        auth_service.revoke_session(db, token)
+    return {"success": True}
