@@ -20,6 +20,7 @@ import { fetchStats } from "../store/slices/dashboardSlice.js";
 import { fetchSubscriptions } from "../store/slices/subscriptionsSlice.js";
 import { fetchTransactions } from "../store/slices/transactionsSlice.js";
 import { fetchInvoices } from "../store/slices/invoicesSlice.js";
+import { fetchBankAccounts } from "../store/slices/bankAccountSlice.js";
 import StatCard from "../components/StatCard.jsx";
 import SectionCard from "../components/SectionCard.jsx";
 import PageHeader from "../components/PageHeader.jsx";
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const subscriptions = useSelector((s) => s.subscriptions.items);
   const transactions = useSelector((s) => s.transactions.items);
   const invoices = useSelector((s) => s.invoices.items);
+  const bankAccounts = useSelector((s) => s.bankAccounts.items);
 
   const [month, setMonth] = useState(() => currentMonthISO());
 
@@ -42,9 +44,14 @@ export default function Dashboard() {
     dispatch(fetchSubscriptions(false, { page_size: 300 }));
     dispatch(fetchTransactions({ page_size: 300 }));
     dispatch(fetchInvoices({ page_size: 300 }));
+    dispatch(fetchBankAccounts({ page_size: 300 }));
   }, [dispatch, month]);
 
   const balanceColor = stats?.month_balance >= 0 ? "var(--fm-success)" : "var(--fm-danger)";
+
+  const totalBankBalance = bankAccounts
+    .filter((a) => a.is_active)
+    .reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
 
   const categoryMap = (stats?.categories || []).reduce((m, c) => ({ ...m, [c.id]: c }), {});
   const pieData = (stats?.category_totals || [])
@@ -95,6 +102,16 @@ export default function Dashboard() {
 
       {/* KPI Grid */}
       <Grid container spacing={1.5} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Total Bank Balance"
+            value={totalBankBalance}
+            color={totalBankBalance >= 0 ? "var(--fm-success)" : "var(--fm-danger)"}
+            icon={<AccountBalanceWalletIcon />}
+            loading={loading}
+            sub={`${bankAccounts.filter(a => a.is_active).length} account(s)`}
+          />
+        </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Month Balance"
