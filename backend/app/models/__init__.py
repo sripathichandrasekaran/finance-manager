@@ -12,6 +12,7 @@ from app.models.login_session import LoginSession
 from app.models.ai_session import AISession
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.business_profile import BusinessProfile
+from app.models.bank_account import BankAccount, BankAccountType
 
 __all__ = [
     "Base",
@@ -24,7 +25,7 @@ __all__ = [
     "ReminderType",
     "ReminderStatus",
     "Company",
-    "TimeEntry",
+    "Time Entry",
     "Budget",
     "Notification",
     "NotificationType",
@@ -35,4 +36,6 @@ __all__ = [
     "InvoiceLineItem",
     "InvoiceStatus",
     "BusinessProfile",
+    "BankAccount",
+    "BankAccountType",
 ]

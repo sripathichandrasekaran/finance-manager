@@ -31,6 +31,10 @@ const NAV_GROUPS = [
     ids: ["dashboard", "companies", "projects", "invoices", "profit", "transactions", "subscriptions"],
   },
   {
+    title: "Finance",
+    ids: ["bankAccounts"],
+  },
+  {
     title: "Freelancer Tools",
     ids: ["time", "budget", "reports"],
   },

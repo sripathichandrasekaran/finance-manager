@@ -25,6 +25,7 @@ class Transaction(Base, TimestampMixin):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    bank_account_id = Column(Integer, ForeignKey("bank_accounts.id"), nullable=True)
     description = Column(Text, nullable=True)
     date = Column(Date, nullable=False, index=True)
     is_ai_categorized = Column(Boolean, default=False, nullable=False)
@@ -32,3 +33,4 @@ class Transaction(Base, TimestampMixin):
     category = relationship("Category", back_populates="transactions")
     company = relationship("Company", back_populates="transactions")
     project = relationship("Project", back_populates="transactions")
+    bank_account = relationship("BankAccount", back_populates="transactions")

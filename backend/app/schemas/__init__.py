@@ -6,3 +6,4 @@ from app.schemas.time_entry import TimeEntryCreate, TimeEntryUpdate, TimeEntryRe
 from app.schemas.budget import BudgetCreate, BudgetUpdate, BudgetRead
 from app.schemas.ai_session import AISessionUpsert, AISessionRead, AIMessage, AIAction
 from app.schemas.invoice import InvoiceCreate, InvoiceUpdate, InvoiceRead, InvoiceLineItemCreate, InvoiceLineItemRead, InvoiceStatusUpdate
+from app.schemas.bank_account import BankAccountCreate, BankAccountUpdate, BankAccountRead

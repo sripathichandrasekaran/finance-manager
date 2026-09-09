@@ -37,6 +37,7 @@ import { fetchTransactions, createTransaction, updateTransaction, deleteTransact
 import { fetchStats } from "../store/slices/dashboardSlice.js";
 import { fetchCompanies } from "../store/slices/companiesSlice.js";
 import { fetchProjects } from "../store/slices/projectsSlice.js";
+import { fetchBankAccounts } from "../store/slices/bankAccountSlice.js";
 import PageHeader from "../components/PageHeader.jsx";
 import { todayISO } from "../utils/timezone.js";
 
@@ -51,6 +52,7 @@ export default function Transactions() {
   const categories = useSelector((s) => (s.dashboard.stats?.categories || []).map((c) => c.name));
   const companies = useSelector((s) => s.companies.items);
   const projects = useSelector((s) => s.projects.items);
+  const bankAccounts = useSelector((s) => s.bankAccounts.items);
   const activeCategories = categories.length ? categories : DEFAULT_CATEGORIES;
   const navigate = useNavigate();
 
@@ -66,6 +68,7 @@ export default function Transactions() {
       category: "Food",
       company_id: "",
       project_id: "",
+      bank_account_id: "",
       description: "",
       date: todayISO(),
     },
@@ -80,6 +83,7 @@ export default function Transactions() {
         ...values,
         company_id: values.company_id ? Number(values.company_id) : null,
         project_id: values.project_id ? Number(values.project_id) : null,
+        bank_account_id: values.bank_account_id ? Number(values.bank_account_id) : null,
       };
       if (editing) {
         const result = await dispatch(updateTransaction({ id: editing.id, ...payload }));
@@ -107,6 +111,7 @@ export default function Transactions() {
     dispatch(fetchStats());
     dispatch(fetchCompanies({ page_size: 500 }));
     dispatch(fetchProjects({ page_size: 500 }));
+    dispatch(fetchBankAccounts({ page_size: 500 }));
   }, [dispatch, page, rowsPerPage]);
 
   useEffect(() => {
@@ -129,6 +134,7 @@ export default function Transactions() {
       category: t.category,
       company_id: t.company_id || "",
       project_id: t.project_id || "",
+      bank_account_id: t.bank_account_id || "",
       description: t.description || "",
       date: t.date,
     });
@@ -176,6 +182,7 @@ export default function Transactions() {
                   <TableCell>Category</TableCell>
                   <TableCell>Company</TableCell>
                   <TableCell>Project</TableCell>
+                  <TableCell>Account</TableCell>
                   <TableCell align="right">Amount</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -218,6 +225,13 @@ export default function Transactions() {
                         <TableCell>
                           {t.project_id ? (
                             <Chip label={projectName(t.project_id)} size="small" variant="outlined" />
+                          ) : (
+                            "\u2014"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {t.bank_account_id ? (
+                            <Chip label={bankAccounts.find((a) => a.id === t.bank_account_id)?.name || "Account"} size="small" color="primary" variant="outlined" />
                           ) : (
                             "\u2014"
                           )}
@@ -336,6 +350,20 @@ export default function Transactions() {
                     {p.name}
                   </MenuItem>
                 ))}
+            </TextField>
+            <TextField
+              select
+              label="Bank Account (optional)"
+              {...formik.getFieldProps("bank_account_id")}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="">None</MenuItem>
+              {bankAccounts.map((a) => (
+                <MenuItem key={a.id} value={a.id}>
+                  {a.name} {a.account_number ? `•••• ${a.account_number.slice(-4)}` : ""}
+                </MenuItem>
+              ))}
             </TextField>
             <TextField
               label="Description"

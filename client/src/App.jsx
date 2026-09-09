@@ -15,6 +15,7 @@ import TimeTracking from "./pages/TimeTracking.jsx";
 import BudgetPlanner from "./pages/BudgetPlanner.jsx";
 import Reports from "./pages/Reports.jsx";
 import AccountSettings from "./pages/AccountSettings.jsx";
+import BankAccounts from "./pages/BankAccounts.jsx";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/profit" element={<Profit />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/bank-accounts" element={<BankAccounts />} />
           <Route path="/time" element={<TimeTracking />} />
           <Route path="/budget" element={<BudgetPlanner />} />
           <Route path="/reports" element={<Reports />} />

@@ -6,3 +6,4 @@ from app.repositories.time_entry_repository import TimeEntryRepository
 from app.repositories.budget_repository import BudgetRepository
 from app.repositories.ai_session_repository import AISessionRepository
 from app.repositories.invoice_repository import InvoiceRepository
+from app.repositories.bank_account_repository import BankAccountRepository

@@ -12,6 +12,7 @@ class TransactionCreate(BaseModel):
     category_id: Optional[int] = None
     company_id: Optional[int] = None
     project_id: Optional[int] = None
+    bank_account_id: Optional[int] = None
     description: Optional[str] = None
     date: Optional[Union[date_type, str]] = None
     is_ai_categorized: bool = False
@@ -24,6 +25,7 @@ class TransactionUpdate(BaseModel):
     category_id: Optional[int] = None
     company_id: Optional[int] = None
     project_id: Optional[int] = None
+    bank_account_id: Optional[int] = None
     description: Optional[str] = None
     date: Optional[Union[date_type, str]] = None
 
@@ -37,6 +39,7 @@ class TransactionRead(BaseModel):
     category: Optional[str] = None
     company_id: Optional[int] = None
     project_id: Optional[int] = None
+    bank_account_id: Optional[int] = None
     description: Optional[str] = None
     date: Optional[date_type] = None
     is_ai_categorized: bool = False
