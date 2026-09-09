@@ -55,6 +55,8 @@ def _run_schema_repairs() -> None:
             ("invoice_payments", "id", "CREATE TABLE invoice_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER NOT NULL REFERENCES invoices(id), amount REAL NOT NULL, payment_date DATE NOT NULL, payment_method VARCHAR(40), reference VARCHAR(100), notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
             ("invoice_events", "id", "CREATE TABLE invoice_events (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER NOT NULL REFERENCES invoices(id), event_type VARCHAR(40) NOT NULL, old_value VARCHAR(100), new_value VARCHAR(100), description TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
             ("bank_accounts", "id", "CREATE TABLE bank_accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(120) NOT NULL, type VARCHAR(20) NOT NULL DEFAULT 'checking', bank_name VARCHAR(120), account_number VARCHAR(40), iban VARCHAR(34), swift_bic VARCHAR(20), currency VARCHAR(3) NOT NULL DEFAULT 'INR', balance REAL NOT NULL DEFAULT 0.0, is_active BOOLEAN DEFAULT 1, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+            ("bank_accounts", "created_at", "ALTER TABLE bank_accounts ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"),
+            ("bank_accounts", "updated_at", "ALTER TABLE bank_accounts ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP"),
         ]:
             if _column_exists(conn, table, column):
                 continue
