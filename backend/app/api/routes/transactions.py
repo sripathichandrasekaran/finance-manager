@@ -152,6 +152,11 @@ def create_transfer(payload: TransferCreate, db: Session = Depends(get_db)):
     debit.transfer_id = credit.id
     db.commit()
 
+    # Adjust account balances
+    acct_repo.adjust_balance(payload.from_account_id, -payload.amount)
+    acct_repo.adjust_balance(payload.to_account_id, payload.amount)
+    db.commit()
+
     return {
         "success": True,
         "debit": _to_read(debit),

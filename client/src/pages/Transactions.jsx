@@ -93,6 +93,7 @@ export default function Transactions() {
           formik.resetForm();
           dispatch(fetchTransactions({ page: page + 1, page_size: rowsPerPage }));
           dispatch(fetchStats());
+          dispatch(fetchBankAccounts({ page_size: 500 }));
         }
       } else {
         const result = await dispatch(createTransaction(payload));
@@ -101,6 +102,7 @@ export default function Transactions() {
           formik.resetForm();
           dispatch(fetchTransactions({ page: page + 1, page_size: rowsPerPage }));
           dispatch(fetchStats());
+          dispatch(fetchBankAccounts({ page_size: 500 }));
         }
       }
     },
@@ -123,6 +125,7 @@ export default function Transactions() {
     if (!result.error) {
       dispatch(fetchStats());
       dispatch(fetchTransactions({ page: page + 1, page_size: rowsPerPage }));
+      dispatch(fetchBankAccounts({ page_size: 500 }));
     }
   };
 

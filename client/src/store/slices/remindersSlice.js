@@ -26,6 +26,18 @@ export const deleteReminder = createAsyncThunk("reminders/delete", async (id) =>
   return id;
 });
 
+export const createReminder = createAsyncThunk(
+  "reminders/create",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.post("/reminders", payload);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.detail || "Failed to create reminder");
+    }
+  }
+);
+
 const remindersSlice = createSlice({
   name: "reminders",
   initialState,
@@ -42,6 +54,12 @@ const remindersSlice = createSlice({
       })
       .addCase(deleteReminder.fulfilled, (state, action) => {
         state.items = state.items.filter((r) => r.id !== action.payload);
+      })
+      .addCase(createReminder.fulfilled, (state, action) => {
+        state.items.unshift(action.payload);
+      })
+      .addCase(createReminder.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });

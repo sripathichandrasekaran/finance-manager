@@ -70,6 +70,14 @@ class BankAccountRepository:
         self.db.refresh(acct)
         return acct
 
+    def adjust_balance(self, acct_id: int, delta: float) -> Optional[BankAccount]:
+        acct = self.get(acct_id)
+        if not acct:
+            return None
+        acct.balance = round(acct.balance + delta, 2)
+        self.db.flush()
+        return acct
+
     def delete(self, acct_id: int) -> bool:
         acct = self.get(acct_id)
         if not acct:

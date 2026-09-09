@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -13,15 +15,23 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TablePagination from "@mui/material/TablePagination";
+import TextField from "@mui/material/TextField";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
+import Alert from "@mui/material/Alert";
+import AddIcon from "@mui/icons-material/Add";
 import DoneIcon from "@mui/icons-material/Done";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import EmptyState from "../components/EmptyState.jsx";
 
-import { fetchReminders, dismissReminder, deleteReminder } from "../store/slices/remindersSlice.js";
+import { fetchReminders, dismissReminder, deleteReminder, createReminder } from "../store/slices/remindersSlice.js";
 import PageHeader from "../components/PageHeader.jsx";
+import { todayISO } from "../utils/timezone.js";
 
 const STATUS_COLORS = { pending: "warning", timed_out: "default", dismissed: "success" };
 
@@ -35,9 +45,37 @@ function formatTime(t) {
 
 export default function Reminders() {
   const dispatch = useDispatch();
-  const { items, total } = useSelector((s) => s.reminders);
+  const { items, total, error } = useSelector((s) => s.reminders);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const formik = useFormik({
+    initialValues: {
+      title: "",
+      message: "",
+      trigger_date: todayISO(),
+      trigger_time: "",
+    },
+    validationSchema: Yup.object({
+      title: Yup.string().required("Title is required"),
+      trigger_date: Yup.date().required("Date is required"),
+    }),
+    onSubmit: async (values, { resetForm }) => {
+      const payload = {
+        title: values.title,
+        message: values.message || null,
+        trigger_date: values.trigger_date,
+        trigger_time: values.trigger_time || null,
+      };
+      const result = await dispatch(createReminder(payload));
+      if (!result.error) {
+        setDialogOpen(false);
+        resetForm();
+        dispatch(fetchReminders({ page_size: 300 }));
+      }
+    },
+  });
 
   useEffect(() => {
     dispatch(fetchReminders({ page_size: 300 }));
@@ -55,11 +93,16 @@ export default function Reminders() {
         title="Reminders"
         description="Upcoming subscription and daily notifications"
         actions={
-          <Chip
-            size="small"
-            label={`${totalPending} pending`}
-            color={totalPending ? "warning" : "success"}
-          />
+          <>
+            <Chip
+              size="small"
+              label={`${totalPending} pending`}
+              color={totalPending ? "warning" : "success"}
+            />
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)}>
+              Create Reminder
+            </Button>
+          </>
         }
       />
 
@@ -153,6 +196,55 @@ export default function Reminders() {
           Refresh
         </Button>
       </Box>
+
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); formik.resetForm(); }} maxWidth="xs" fullWidth>
+        <DialogTitle>Create Reminder</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+            {error && <Alert severity="error">{typeof error === 'string' ? error : 'An error occurred'}</Alert>}
+            <TextField
+              label="Title"
+              {...formik.getFieldProps("title")}
+              size="small"
+              fullWidth
+              error={formik.touched.title && Boolean(formik.errors.title)}
+              helperText={formik.touched.title && formik.errors.title}
+            />
+            <TextField
+              label="Message (optional)"
+              {...formik.getFieldProps("message")}
+              size="small"
+              fullWidth
+              multiline
+              minRows={2}
+            />
+            <TextField
+              label="Date"
+              type="date"
+              {...formik.getFieldProps("trigger_date")}
+              size="small"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              error={formik.touched.trigger_date && Boolean(formik.errors.trigger_date)}
+              helperText={formik.touched.trigger_date && formik.errors.trigger_date}
+            />
+            <TextField
+              label="Time (optional)"
+              type="time"
+              {...formik.getFieldProps("trigger_time")}
+              size="small"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setDialogOpen(false); formik.resetForm(); }}>Cancel</Button>
+          <Button variant="contained" onClick={formik.handleSubmit} disabled={!formik.isValid || formik.isSubmitting}>
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -6,6 +6,7 @@ from sqlalchemy import func, case
 from app.core.timezone import today as ist_today
 from app.models.transaction import Transaction, TransactionType
 from app.models.category import Category
+from app.models.bank_account import BankAccount
 
 
 class TransactionRepository:
@@ -13,6 +14,21 @@ class TransactionRepository:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _balance_delta(self, type_: TransactionType, amount: float) -> float:
+        if type_ == TransactionType.CREDIT:
+            return amount
+        elif type_ == TransactionType.DEBIT:
+            return -amount
+        return 0.0
+
+    def _apply_balance(self, bank_account_id: Optional[int], type_: TransactionType, amount: float):
+        if not bank_account_id:
+            return
+        acct = self.db.query(BankAccount).filter(BankAccount.id == bank_account_id).first()
+        if acct:
+            acct.balance = round(acct.balance + self._balance_delta(type_, amount), 2)
+            self.db.flush()
 
     def _resolve_category(self, category_name: Optional[str], category_id: Optional[int]) -> Optional[int]:
         if category_id:
@@ -46,6 +62,8 @@ class TransactionRepository:
             is_ai_categorized=is_ai_categorized,
         )
         self.db.add(tx)
+        self.db.flush()
+        self._apply_balance(bank_account_id, type_, amount)
         self.db.commit()
         self.db.refresh(tx)
         return tx
@@ -74,6 +92,9 @@ class TransactionRepository:
         tx = self.get(tx_id)
         if not tx:
             return None
+        old_amount = tx.amount
+        old_type = tx.type
+        old_bank_id = tx.bank_account_id
         for key, value in fields.items():
             if value is None or key in ("id",):
                 continue
@@ -98,6 +119,22 @@ class TransactionRepository:
                 tx.description = value
             elif key == "date":
                 tx.date = value
+        if old_bank_id:
+            old_delta = self._balance_delta(old_type, old_amount)
+            if old_bank_id == tx.bank_account_id:
+                new_delta = self._balance_delta(tx.type, tx.amount)
+                if old_bank_id:
+                    acct = self.db.query(BankAccount).filter(BankAccount.id == old_bank_id).first()
+                    if acct:
+                        acct.balance = round(acct.balance - old_delta + new_delta, 2)
+                        self.db.flush()
+            else:
+                if old_bank_id:
+                    self._apply_balance(old_bank_id, old_type, old_amount * -1)
+                if tx.bank_account_id:
+                    self._apply_balance(tx.bank_account_id, tx.type, tx.amount)
+        elif tx.bank_account_id:
+            self._apply_balance(tx.bank_account_id, tx.type, tx.amount)
         self.db.commit()
         self.db.refresh(tx)
         return tx
@@ -106,6 +143,8 @@ class TransactionRepository:
         tx = self.get(tx_id)
         if not tx:
             return False
+        if tx.bank_account_id:
+            self._apply_balance(tx.bank_account_id, tx.type, tx.amount * -1)
         self.db.delete(tx)
         self.db.commit()
         return True
