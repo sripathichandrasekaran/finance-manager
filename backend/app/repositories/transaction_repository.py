@@ -29,6 +29,7 @@ class TransactionRepository:
     def create(self, amount: float, type_: TransactionType, category: Optional[str] = None,
                category_id: Optional[int] = None, company_id: Optional[int] = None,
                project_id: Optional[int] = None, bank_account_id: Optional[int] = None,
+               transfer_id: Optional[int] = None,
                description: Optional[str] = None,
                date_: Optional[date] = None, is_ai_categorized: bool = False) -> Transaction:
         cat_id = self._resolve_category(category, category_id)
@@ -39,6 +40,7 @@ class TransactionRepository:
             company_id=company_id,
             project_id=project_id,
             bank_account_id=bank_account_id,
+            transfer_id=transfer_id,
             description=description,
             date=date_ or ist_today(),
             is_ai_categorized=is_ai_categorized,
@@ -86,6 +88,8 @@ class TransactionRepository:
                 tx.project_id = value
             elif key == "bank_account_id":
                 tx.bank_account_id = value
+            elif key == "transfer_id":
+                tx.transfer_id = value
             elif key == "type":
                 tx.type = value
             elif key == "amount":

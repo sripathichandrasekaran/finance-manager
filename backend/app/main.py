@@ -25,6 +25,7 @@ def _run_schema_repairs() -> None:
             ("transactions", "company_id", "ALTER TABLE transactions ADD COLUMN company_id INTEGER"),
             ("transactions", "project_id", "ALTER TABLE transactions ADD COLUMN project_id INTEGER"),
             ("transactions", "bank_account_id", "ALTER TABLE transactions ADD COLUMN bank_account_id INTEGER"),
+            ("transactions", "transfer_id", "ALTER TABLE transactions ADD COLUMN transfer_id INTEGER"),
             ("subscriptions", "company_id", "ALTER TABLE subscriptions ADD COLUMN company_id INTEGER"),
             ("subscriptions", "paid", "ALTER TABLE subscriptions ADD COLUMN paid BOOLEAN DEFAULT 0"),
             ("companies", "hourly_rate", "ALTER TABLE companies ADD COLUMN hourly_rate REAL"),

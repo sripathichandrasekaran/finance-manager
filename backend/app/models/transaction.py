@@ -12,6 +12,7 @@ from app.models.base import TimestampMixin
 class TransactionType(str, enum.Enum):
     CREDIT = "credit"
     DEBIT = "debit"
+    TRANSFER = "transfer"
 
 
 class Transaction(Base, TimestampMixin):
@@ -26,6 +27,7 @@ class Transaction(Base, TimestampMixin):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     bank_account_id = Column(Integer, ForeignKey("bank_accounts.id"), nullable=True)
+    transfer_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
     description = Column(Text, nullable=True)
     date = Column(Date, nullable=False, index=True)
     is_ai_categorized = Column(Boolean, default=False, nullable=False)
@@ -34,3 +36,4 @@ class Transaction(Base, TimestampMixin):
     company = relationship("Company", back_populates="transactions")
     project = relationship("Project", back_populates="transactions")
     bank_account = relationship("BankAccount", back_populates="transactions")
+    transfer_pair = relationship("Transaction", remote_side=[id], backref="transfer_linked")

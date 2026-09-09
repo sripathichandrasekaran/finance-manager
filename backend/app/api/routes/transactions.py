@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.repositories.transaction_repository import TransactionRepository
-from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionRead
+from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionRead, TransferCreate
 
 from app.core.timezone import today as ist_today
 from app.core.pagination import apply_sequence_pagination, set_pagination_headers
@@ -20,6 +20,7 @@ def _to_read(tx) -> TransactionRead:
         company_id=tx.company_id,
         project_id=tx.project_id,
         bank_account_id=tx.bank_account_id,
+        transfer_id=tx.transfer_id,
         description=tx.description,
         date=tx.date,
         is_ai_categorized=tx.is_ai_categorized,
@@ -65,6 +66,7 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
         company_id=payload.company_id,
         project_id=payload.project_id,
         bank_account_id=payload.bank_account_id,
+        transfer_id=payload.transfer_id,
         description=payload.description,
         date_=tx_date,
         is_ai_categorized=payload.is_ai_categorized,
@@ -100,3 +102,58 @@ def daily_summary(db: Session = Depends(get_db)):
 @router.get("/summary/monthly")
 def monthly_summary(year: int, month: int, db: Session = Depends(get_db)):
     return TransactionRepository(db).monthly_summary(year, month)
+
+
+@router.post("/transfer", response_model=dict)
+def create_transfer(payload: TransferCreate, db: Session = Depends(get_db)):
+    """Create a transfer between two bank accounts (debit from, credit to)."""
+    from app.repositories.bank_account_repository import BankAccountRepository
+    from app.models.transaction import TransactionType
+
+    # Validate accounts exist
+    acct_repo = BankAccountRepository(db)
+    from_acct = acct_repo.get(payload.from_account_id)
+    to_acct = acct_repo.get(payload.to_account_id)
+    if not from_acct:
+        raise HTTPException(404, "Source account not found")
+    if not to_acct:
+        raise HTTPException(404, "Destination account not found")
+    if from_acct.id == to_acct.id:
+        raise HTTPException(400, "Cannot transfer to the same account")
+
+    tx_date = payload.date if isinstance(payload.date, date) else (
+        datetime.fromisoformat(payload.date).date() if payload.date else ist_today()
+    )
+
+    repo = TransactionRepository(db)
+
+    # Create debit transaction (outgoing)
+    debit = repo.create(
+        amount=payload.amount,
+        type_=TransactionType.TRANSFER,
+        category="Transfer",
+        bank_account_id=payload.from_account_id,
+        description=payload.description or f"Transfer to {to_acct.name}",
+        date_=tx_date,
+    )
+
+    # Create credit transaction (incoming)
+    credit = repo.create(
+        amount=payload.amount,
+        type_=TransactionType.TRANSFER,
+        category="Transfer",
+        bank_account_id=payload.to_account_id,
+        transfer_id=debit.id,
+        description=payload.description or f"Transfer from {from_acct.name}",
+        date_=tx_date,
+    )
+
+    # Link them
+    debit.transfer_id = credit.id
+    db.commit()
+
+    return {
+        "success": True,
+        "debit": _to_read(debit),
+        "credit": _to_read(credit),
+    }

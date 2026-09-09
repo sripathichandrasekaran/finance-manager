@@ -56,6 +56,18 @@ export const deleteBankAccount = createAsyncThunk(
   }
 );
 
+export const createTransfer = createAsyncThunk(
+  "bankAccounts/transfer",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.post("/transactions/transfer", payload);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.detail || "Failed to create transfer");
+    }
+  }
+);
+
 const slice = createSlice({
   name: "bankAccounts",
   initialState,
