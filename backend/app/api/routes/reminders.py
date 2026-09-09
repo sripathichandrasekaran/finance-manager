@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.repositories.reminder_repository import ReminderRepository
-from app.schemas.reminder import ReminderCreate, ReminderStatusUpdate, ReminderRead
+from app.schemas.reminder import ReminderCreate, ReminderStatusUpdate, ReminderUpdate, ReminderRead
 from app.core.pagination import apply_sequence_pagination, set_pagination_headers
 
 from app.core.timezone import today as ist_today
@@ -66,6 +66,16 @@ def create_reminder(payload: ReminderCreate, db: Session = Depends(get_db)):
 @router.patch("/{reminder_id}/status", response_model=ReminderRead)
 def update_status(reminder_id: int, payload: ReminderStatusUpdate, db: Session = Depends(get_db)):
     r = ReminderRepository(db).set_status(reminder_id, payload.status)
+    if not r:
+        raise HTTPException(404, "Reminder not found")
+    return r
+
+
+@router.patch("/{reminder_id}", response_model=ReminderRead)
+def update_reminder(reminder_id: int, payload: ReminderUpdate, db: Session = Depends(get_db)):
+    repo = ReminderRepository(db)
+    fields = payload.model_dump(exclude_unset=True)
+    r = repo.update(reminder_id, fields)
     if not r:
         raise HTTPException(404, "Reminder not found")
     return r

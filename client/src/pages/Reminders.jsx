@@ -25,11 +25,12 @@ import Tooltip from "@mui/material/Tooltip";
 import Alert from "@mui/material/Alert";
 import AddIcon from "@mui/icons-material/Add";
 import DoneIcon from "@mui/icons-material/Done";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import EmptyState from "../components/EmptyState.jsx";
 
-import { fetchReminders, dismissReminder, deleteReminder, createReminder } from "../store/slices/remindersSlice.js";
+import { fetchReminders, dismissReminder, deleteReminder, createReminder, updateReminder } from "../store/slices/remindersSlice.js";
 import PageHeader from "../components/PageHeader.jsx";
 import { todayISO } from "../utils/timezone.js";
 
@@ -49,6 +50,7 @@ export default function Reminders() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   const formik = useFormik({
     initialValues: {
@@ -68,11 +70,21 @@ export default function Reminders() {
         trigger_date: values.trigger_date,
         trigger_time: values.trigger_time || null,
       };
-      const result = await dispatch(createReminder(payload));
-      if (!result.error) {
-        setDialogOpen(false);
-        resetForm();
-        dispatch(fetchReminders({ page_size: 300 }));
+      if (editing) {
+        const result = await dispatch(updateReminder({ id: editing.id, ...payload }));
+        if (!result.error) {
+          setDialogOpen(false);
+          setEditing(null);
+          resetForm();
+          dispatch(fetchReminders({ page_size: 300 }));
+        }
+      } else {
+        const result = await dispatch(createReminder(payload));
+        if (!result.error) {
+          setDialogOpen(false);
+          resetForm();
+          dispatch(fetchReminders({ page_size: 300 }));
+        }
       }
     },
   });
@@ -86,6 +98,27 @@ export default function Reminders() {
   useEffect(() => {
     if (page > 0 && page * rowsPerPage >= total) setPage(0);
   }, [total, page, rowsPerPage]);
+
+  const openEdit = (r) => {
+    setEditing(r);
+    formik.setValues({
+      title: r.title,
+      message: r.message || "",
+      trigger_date: r.trigger_date,
+      trigger_time: r.trigger_time || "",
+    });
+    formik.setErrors({});
+    formik.setTouched({});
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    formik.resetForm();
+    formik.setErrors({});
+    formik.setTouched({});
+  };
 
   return (
     <Box>
@@ -159,6 +192,15 @@ export default function Reminders() {
                             </IconButton>
                           </Tooltip>
                         )}
+                        <Tooltip title="Edit">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => openEdit(r)}
+                          >
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Delete">
                           <IconButton
                             size="small"
@@ -197,8 +239,8 @@ export default function Reminders() {
         </Button>
       </Box>
 
-      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); formik.resetForm(); }} maxWidth="xs" fullWidth>
-        <DialogTitle>Create Reminder</DialogTitle>
+      <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="xs" fullWidth>
+        <DialogTitle>{editing ? "Edit Reminder" : "Create Reminder"}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
             {error && <Alert severity="error">{typeof error === 'string' ? error : 'An error occurred'}</Alert>}
@@ -239,9 +281,9 @@ export default function Reminders() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => { setDialogOpen(false); formik.resetForm(); }}>Cancel</Button>
+          <Button onClick={handleDialogClose}>Cancel</Button>
           <Button variant="contained" onClick={formik.handleSubmit} disabled={!formik.isValid || formik.isSubmitting}>
-            Create
+            {editing ? "Save" : "Create"}
           </Button>
         </DialogActions>
       </Dialog>

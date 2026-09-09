@@ -64,6 +64,18 @@ class ReminderRepository:
         self.db.refresh(r)
         return r
 
+    def update(self, reminder_id: int, fields: dict) -> Optional[Reminder]:
+        r = self.get(reminder_id)
+        if not r:
+            return None
+        for key, value in fields.items():
+            if value is None or key in ("id", "status", "sent_at", "created_at", "updated_at"):
+                continue
+            setattr(r, key, value)
+        self.db.commit()
+        self.db.refresh(r)
+        return r
+
     def delete(self, reminder_id: int) -> bool:
         r = self.get(reminder_id)
         if not r:

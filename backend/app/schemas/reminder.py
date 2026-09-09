@@ -18,6 +18,13 @@ class ReminderStatusUpdate(BaseModel):
     status: ReminderStatus
 
 
+class ReminderUpdate(BaseModel):
+    title: Optional[str] = None
+    message: Optional[str] = None
+    trigger_date: Optional[date] = None
+    trigger_time: Optional[time] = None
+
+
 class ReminderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

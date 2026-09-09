@@ -38,6 +38,18 @@ export const createReminder = createAsyncThunk(
   }
 );
 
+export const updateReminder = createAsyncThunk(
+  "reminders/update",
+  async ({ id, ...payload }, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.patch(`/reminders/${id}`, payload);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.detail || "Failed to update reminder");
+    }
+  }
+);
+
 const remindersSlice = createSlice({
   name: "reminders",
   initialState,
@@ -59,6 +71,13 @@ const remindersSlice = createSlice({
         state.items.unshift(action.payload);
       })
       .addCase(createReminder.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+      .addCase(updateReminder.fulfilled, (state, action) => {
+        const idx = state.items.findIndex((r) => r.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      })
+      .addCase(updateReminder.rejected, (state, action) => {
         state.error = action.payload;
       });
   },
