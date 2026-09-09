@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -7,7 +7,7 @@ from app.models.bank_account import BankAccountType
 
 class BankAccountCreate(BaseModel):
     name: str = Field(..., min_length=1)
-    type: BankAccountType = BankAccountType.CHECKING
+    type: str = "checking"
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
     iban: Optional[str] = None
@@ -20,7 +20,7 @@ class BankAccountCreate(BaseModel):
 
 class BankAccountUpdate(BaseModel):
     name: Optional[str] = None
-    type: Optional[BankAccountType] = None
+    type: Optional[str] = None
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
     iban: Optional[str] = None
@@ -36,7 +36,7 @@ class BankAccountRead(BaseModel):
 
     id: int
     name: str
-    type: BankAccountType
+    type: str
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
     iban: Optional[str] = None
@@ -45,5 +45,5 @@ class BankAccountRead(BaseModel):
     balance: float
     is_active: bool
     notes: Optional[str] = None
-    created_at: date
-    updated_at: date
+    created_at: datetime
+    updated_at: datetime

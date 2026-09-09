@@ -14,19 +14,31 @@ def _parse_date(value):
     return value
 
 
+def _parse_type(value):
+    """Convert string to BankAccountType enum."""
+    if value is None:
+        return BankAccountType.CHECKING
+    if isinstance(value, BankAccountType):
+        return value
+    try:
+        return BankAccountType(value)
+    except ValueError:
+        return BankAccountType.CHECKING
+
+
 class BankAccountRepository:
     """Data-access layer for bank accounts."""
 
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, name: str, type: BankAccountType = BankAccountType.CHECKING,
+    def create(self, name: str, type: str = "checking",
                bank_name: Optional[str] = None, account_number: Optional[str] = None,
                iban: Optional[str] = None, swift_bic: Optional[str] = None,
                currency: str = "INR", balance: float = 0.0,
                is_active: bool = True, notes: Optional[str] = None) -> BankAccount:
         acct = BankAccount(
-            name=name, type=type, bank_name=bank_name, account_number=account_number,
+            name=name, type=_parse_type(type), bank_name=bank_name, account_number=account_number,
             iban=iban, swift_bic=swift_bic, currency=currency,
             balance=balance, is_active=is_active, notes=notes
         )
@@ -51,6 +63,8 @@ class BankAccountRepository:
         for key, value in fields.items():
             if value is None or key in ("id",):
                 continue
+            if key == "type":
+                value = _parse_type(value)
             setattr(acct, key, value)
         self.db.commit()
         self.db.refresh(acct)
