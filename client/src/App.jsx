@@ -17,6 +17,7 @@ import Reports from "./pages/Reports.jsx";
 import AccountSettings from "./pages/AccountSettings.jsx";
 import BankAccounts from "./pages/BankAccounts.jsx";
 import GigRadar from "./pages/GigRadar.jsx";
+import MessageKit from "./pages/MessageKit.jsx";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/budget" element={<BudgetPlanner />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/radar" element={<GigRadar />} />
+          <Route path="/messages" element={<MessageKit />} />
           <Route path="/ai" element={<AIAssistant />} />
           <Route path="/reminders" element={<Reminders />} />
           <Route path="/settings" element={<AccountSettings />} />

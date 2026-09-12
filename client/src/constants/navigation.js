@@ -12,6 +12,7 @@ import WorkIcon from "@mui/icons-material/Work";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import RadarIcon from "@mui/icons-material/Radar";
+import ForumIcon from "@mui/icons-material/Forum";
 
 export const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", Icon: DashboardIcon, path: "/" },
@@ -26,6 +27,7 @@ export const NAV_ITEMS = [
   { id: "budget", label: "Budget Planner", Icon: AccountBalanceWalletIcon, path: "/budget" },
   { id: "reports", label: "Reports", Icon: AssessmentIcon, path: "/reports" },
   { id: "radar", label: "Gig Radar", Icon: RadarIcon, path: "/radar" },
+  { id: "messages", label: "Message Kit", Icon: ForumIcon, path: "/messages" },
   { id: "ai", label: "AI Assistant", Icon: AutoAwesomeIcon, path: "/ai" },
   { id: "reminders", label: "Reminders", Icon: NotificationsActiveIcon, path: "/reminders" },
 ];
