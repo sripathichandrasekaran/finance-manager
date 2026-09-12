@@ -244,10 +244,10 @@ export default function Transactions() {
                             variant="body2"
                             sx={{
                               fontWeight: 600,
-                              color: t.type === "credit" ? "var(--fm-success)" : "var(--fm-danger)",
+                              color: t.direction === "incoming" ? "var(--fm-success)" : "var(--fm-danger)",
                             }}
                           >
-                            {t.type === "credit" ? "+" : "\u2212"}₹{Number(t.amount).toFixed(2)}
+                            {t.direction === "incoming" ? "+" : "\u2212"}₹{Number(t.amount).toFixed(2)}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">

@@ -54,6 +54,7 @@ class TransactionRead(BaseModel):
     description: Optional[str] = None
     date: Optional[date_type] = None
     is_ai_categorized: bool = False
+    direction: str = "outgoing"
     created_at: Optional[object] = None
 
 

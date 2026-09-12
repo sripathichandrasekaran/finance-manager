@@ -4,11 +4,25 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.repositories.transaction_repository import TransactionRepository
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionRead, TransferCreate
+from app.models.transaction import TransactionType
 
 from app.core.timezone import today as ist_today
 from app.core.pagination import apply_sequence_pagination, set_pagination_headers
 
 router = APIRouter()
+
+
+def _direction(tx) -> str:
+    if tx.type == TransactionType.CREDIT:
+        return "incoming"
+    if tx.type == TransactionType.DEBIT:
+        return "outgoing"
+    # For transfers the outgoing leg is created first; the two legs point at
+    # each other via transfer_id, so the leg referencing an earlier row id is
+    # the incoming (credit) side.
+    if tx.transfer_id is not None and tx.transfer_id < tx.id:
+        return "incoming"
+    return "outgoing"
 
 
 def _to_read(tx) -> TransactionRead:
@@ -24,6 +38,7 @@ def _to_read(tx) -> TransactionRead:
         description=tx.description,
         date=tx.date,
         is_ai_categorized=tx.is_ai_categorized,
+        direction=_direction(tx),
         created_at=tx.created_at,
     )
 
@@ -40,7 +55,6 @@ def list_transactions(
     response: Response = None,
     db: Session = Depends(get_db),
 ):
-    from app.models.transaction import TransactionType
     ttype = TransactionType(type_) if type_ in {"credit", "debit"} else None
     repo = TransactionRepository(db)
     rows = repo.list(type_=ttype, category=category, company_id=company_id,
@@ -108,7 +122,6 @@ def monthly_summary(year: int, month: int, db: Session = Depends(get_db)):
 def create_transfer(payload: TransferCreate, db: Session = Depends(get_db)):
     """Create a transfer between two bank accounts (debit from, credit to)."""
     from app.repositories.bank_account_repository import BankAccountRepository
-    from app.models.transaction import TransactionType
 
     # Validate accounts exist
     acct_repo = BankAccountRepository(db)
