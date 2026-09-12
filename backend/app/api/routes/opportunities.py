@@ -101,16 +101,20 @@ def delete_opportunity(opportunity_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{opportunity_id}/draft", response_model=OpportunityRead)
 def generate_draft(opportunity_id: int, db: Session = Depends(get_db)):
+    """Generate a proposal draft for an opportunity. Prefers Claude when a
+    key is configured and reachable; otherwise falls back to a deterministic
+    local template so the button always works."""
     repo = OpportunityRepository(db)
     opp = repo.get(opportunity_id)
     if not opp:
         raise HTTPException(404, "Opportunity not found")
+    text = None
     try:
         text = radar.draft_proposal(db, opp)
-    except RuntimeError as exc:
-        raise HTTPException(502, str(exc)) from exc
+    except Exception:  # noqa: BLE001
+        text = None
     if not text:
-        raise HTTPException(400, "AI is not configured — set ANTHROPIC_API_KEY to generate drafts")
+        text = radar.local_proposal(opp)
     opp = repo.update(opportunity_id, {"draft": text})
     return _to_read(opp)
 

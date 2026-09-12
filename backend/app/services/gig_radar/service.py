@@ -234,6 +234,102 @@ def draft_proposal(db: Session, opp) -> Optional[str]:
 
 
 # --------------------------------------------------------------------------- #
+# Local proposal template (works with zero AI credits)
+# --------------------------------------------------------------------------- #
+
+_LOCAL_SERVICES = (
+    (
+        ("shopify", "e-commerce", "ecommerce"),
+        "a Shopify store, from theme to checkout, mobile-first",
+        "$150-$500",
+    ),
+    (
+        ("wordpress", "elementor"),
+        "a fast, responsive WordPress site built with Elementor",
+        "$150-$500",
+    ),
+    (
+        ("landing page", "landing-page"),
+        "a high-converting landing page in React + Tailwind (with Framer micro-interactions)",
+        "$100-$300",
+    ),
+    (
+        ("react", "next.js", "nextjs", "frontend"),
+        "a React frontend or dashboard in TypeScript (MUI + Redux for clean, fast data UIs)",
+        "$150-$700",
+    ),
+    (
+        ("figma", "ui/ux", "ui design", "ux design"),
+        "a pixel-perfect, responsive build straight from your Figma design",
+        "$100-$300",
+    ),
+    (
+        ("wix", "squarespace"),
+        "a polished Wix/Squarespace business site with modern design and fast delivery",
+        "$150-$500",
+    ),
+    (
+        ("redesign", "bug", "fix", "improve"),
+        "a fast audit, fix and redesign of your existing website",
+        "$50-$200",
+    ),
+    (
+        ("website", "web design", "web develop"),
+        "a responsive, business-ready website with modern design",
+        "$150-$500",
+    ),
+)
+
+
+def local_proposal(opp) -> Optional[str]:
+    """Deterministic proposal built from Sripathi's profile + this specific
+    gig. Always returns a ready-to-copy message in ~100 words, even when
+    Claude is out of credit or unreachable."""
+    title = opp.title or ""
+    desc = (opp.description or "")[:2500]
+    blob = f"{title}\n{desc}\n{opp.skills or ''}".lower()
+
+    service_line = "a responsive website or React frontend"
+    price_hint = "$150-$500"
+    for keywords, line, price in _LOCAL_SERVICES:
+        if any(k in blob for k in keywords):
+            service_line = line
+            price_hint = price
+            break
+
+    budget = ""
+    bmin = getattr(opp, "budget_min", None)
+    if isinstance(bmin, (int, float)) and bmin:
+        cur = opp.currency or "USD"
+        amount = f"{bmin:,.0f}" if bmin >= 1 else f"{bmin:g}"
+        budget = (
+            f"\n\nI can see the budget is {cur} {amount} - happy to scope "
+            f"it to deliver within that range."
+        )
+    elif opp.source in ("truelancer", "freelancer"):
+        budget = (
+            "\n\nNo budget shown here - I can send a fixed scope and price "
+            "right away if you'd like."
+        )
+
+    topic = title.strip().strip(".").rstrip("!?")
+    if len(topic) > 110:
+        topic = topic[:110].rstrip() + "..."
+    quote = f'"{topic}"' if topic else "this project"
+
+    return (
+        f"Hi - Sripathi here, a frontend developer (remote, Tamil Nadu, "
+        f"India, working US/UK hours when you need me).\n\n"
+        f"For {quote} I can build {service_line}. I would start with a short "
+        f"scope: the exact pages or tasks, a fixed timeline, and a fixed "
+        f"price - so you know precisely what you are getting.{budget}\n\n"
+        f"My typical delivery is 3-7 days, and every build includes 7 days "
+        f"of post-launch support, so you are never stuck after handover. "
+        f"I would love to take this on - want me to send the plan?"
+    )
+
+
+# --------------------------------------------------------------------------- #
 # Won flow
 # --------------------------------------------------------------------------- #
 
