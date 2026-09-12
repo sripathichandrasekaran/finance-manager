@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi import Query
 from reportlab.lib.pagesizes import A4
@@ -835,3 +835,33 @@ def list_events(
     page_rows, total = apply_sequence_pagination(events, page, page_size)
     set_pagination_headers(response, total, page, page_size)
     return page_rows
+
+
+# ==================== Shareable payment link ====================
+
+@router.get("/{invoice_id}/share")
+def create_invoice_share_link(
+    invoice_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Create a signed, accountless share link your client can open in any
+    browser (or on WhatsApp). The link embeds no secrets beyond the invoice id
+    and a signed HMAC, so it is safe to forward freely."""
+    from app.services.invoice_share_service import make_token, log_share
+    inv = InvoiceRepository(db).get(invoice_id)
+    if not inv:
+        raise HTTPException(404, "Invoice not found")
+    if inv.status == "draft":
+        raise HTTPException(400, "Draft invoices cannot be shared yet")
+    company = db.query(Company).filter(Company.id == inv.company_id).first()
+    token = make_token(inv.id)
+    base = str(request.base_url).rstrip("/")
+    url = f"{base}/api/public/inv/{token}"
+    log_share(db, inv.id)
+    return {
+        "url": url,
+        "invoice_number": inv.invoice_number,
+        "company_name": company.name if company else "",
+        "company_phone": company.contact_phone if company else "",
+    }

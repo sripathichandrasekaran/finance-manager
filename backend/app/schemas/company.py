@@ -7,6 +7,7 @@ class CompanyCreate(BaseModel):
     name: str = Field(..., min_length=1)
     industry: Optional[str] = None
     contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
     notes: Optional[str] = None
     active: bool = True
     hourly_rate: Optional[float] = None
@@ -27,6 +28,7 @@ class CompanyUpdate(BaseModel):
     name: Optional[str] = None
     industry: Optional[str] = None
     contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
     notes: Optional[str] = None
     active: Optional[bool] = None
     hourly_rate: Optional[float] = None
@@ -50,6 +52,7 @@ class CompanyRead(BaseModel):
     name: str
     industry: Optional[str] = None
     contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
     notes: Optional[str] = None
     active: bool
     hourly_rate: Optional[float] = None

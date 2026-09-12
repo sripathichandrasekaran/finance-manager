@@ -44,9 +44,14 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import HistoryIcon from "@mui/icons-material/History";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
+import IosShareIcon from "@mui/icons-material/IosShare";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ChatIcon from "@mui/icons-material/Chat";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import EmptyState from "../components/EmptyState.jsx";
 import DateField from "../components/DateField.jsx";
 import api from "../services/api.js";
@@ -113,6 +118,8 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [statusMenu, setStatusMenu] = useState(null); // { anchorEl, invoice }
   const [payDialog, setPayDialog] = useState(null); // invoice to record payment on
+  const [shareDlg, setShareDlg] = useState(null); // { url, invoice_number, company_name, company_phone }
+  const [shareToast, setShareToast] = useState({ open: false, msg: "" });
   const [preview, setPreview] = useState(null); // invoice to preview
   const [seller, setSeller] = useState(null); // business-profile for the From block
   const [page, setPage] = useState(0);
@@ -389,6 +396,28 @@ export default function Invoices() {
     }
   };
 
+  const openShare = async (inv) => {
+    try {
+      const { data } = await api.get(`/invoices/${inv.id}/share`);
+      setShareDlg(data);
+    } catch {
+      window.alert("Draft invoices can't be shared yet — finalize it first.");
+    }
+  };
+
+  const copyShareLink = () => {
+    if (shareDlg?.url && navigator.clipboard?.writeText) navigator.clipboard.writeText(shareDlg.url).catch(() => {});
+    setShareToast({ open: true, msg: "Invoice link copied — paste it anywhere" });
+  };
+
+  const openWhatsApp = () => {
+    if (!shareDlg?.url) return;
+    const text = `Your invoice ${shareDlg.invoice_number}${shareDlg.company_name ? ` from ${shareDlg.company_name}` : ""} is ready — view here: ${shareDlg.url}`;
+    let phone = shareDlg.company_phone ? shareDlg.company_phone.replace(/[^0-9]/g, "") : "";
+    if (phone.length === 10) phone = `91${phone}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
   const nextInvoiceNumber = () => {
     const count = items.length;
     const now = new Date();
@@ -568,6 +597,11 @@ export default function Invoices() {
                         <Tooltip title="Preview">
                           <IconButton size="small" onClick={() => setPreview(inv)}>
                             <VisibilityOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Share invoice link">
+                          <IconButton size="small" color="secondary" onClick={() => openShare(inv)}>
+                            <IosShareIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Print">
@@ -1101,6 +1135,51 @@ export default function Invoices() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={Boolean(shareDlg)} onClose={() => setShareDlg(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Share {shareDlg?.invoice_number || "invoice"}
+          {shareDlg?.company_name ? ` — ${shareDlg.company_name}` : ""}
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: "var(--fm-text-secondary)", mb: 1.5, fontSize: 13 }}>
+            Your client can open this link in any browser — no account or app needed. Safe to forward in WhatsApp, email, or DM.
+          </Typography>
+          <TextField
+            value={shareDlg?.url || ""}
+            size="small"
+            fullWidth
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <IconButton size="small" onClick={copyShareLink}>
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              ),
+            }}
+            sx={{ mb: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={copyShareLink} startIcon={<ContentCopyIcon />}>
+            Copy link
+          </Button>
+          <Button variant="contained" startIcon={<ChatIcon />} onClick={openWhatsApp}>
+            Send on WhatsApp
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={shareToast.open}
+        autoHideDuration={4000}
+        onClose={() => setShareToast({ open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" variant="filled" onClose={() => setShareToast({ open: false })}>
+          {shareToast.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

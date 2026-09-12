@@ -43,7 +43,7 @@ import { fetchCompanyProjectReport } from "../store/slices/projectsSlice.js";
 import api from "../services/api.js";
 import PageHeader from "../components/PageHeader.jsx";
 
-const EMPTY = { name: "", industry: "", contact_email: "", notes: "", contract_type: "hourly", hourly_rate: "", fixed_price: "", contract_start: "", contract_end: "", payment_terms: "", gstin: "", billing_address: "", city: "", state: "", state_code: "", pincode: "" };
+const EMPTY = { name: "", industry: "", contact_email: "", contact_phone: "", notes: "", contract_type: "hourly", hourly_rate: "", fixed_price: "", contract_start: "", contract_end: "", payment_terms: "", gstin: "", billing_address: "", city: "", state: "", state_code: "", pincode: "" };
 
 function toNull(v) {
   if (v === null || v === undefined) return null;
@@ -197,6 +197,7 @@ export default function Companies() {
       name: c.name,
       industry: c.industry || "",
       contact_email: c.contact_email || "",
+      contact_phone: c.contact_phone || "",
       notes: c.notes || "",
       contract_type: c.contract_type || "hourly",
       hourly_rate: c.hourly_rate || "",
@@ -464,6 +465,13 @@ export default function Companies() {
               {...formik.getFieldProps("contact_email")}
               error={formik.touched.contact_email && Boolean(formik.errors.contact_email)}
               helperText={formik.touched.contact_email && formik.errors.contact_email}
+            />
+            <TextField
+              label="Contact phone (for WhatsApp)"
+              fullWidth
+              {...formik.getFieldProps("contact_phone")}
+              helperText="With country code if outside India — used for 'Send on WhatsApp'"
+              inputProps={{ maxLength: 20 }}
             />
             <TextField label="Notes" fullWidth multiline minRows={2} {...formik.getFieldProps("notes")} />
             <Typography variant="subtitle2" sx={{ mt: 1, color: "var(--fm-text-secondary)" }}>Contract Details</Typography>

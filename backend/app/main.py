@@ -53,6 +53,7 @@ def _run_schema_repairs() -> None:
             ("companies", "state", "ALTER TABLE companies ADD COLUMN state VARCHAR(50)"),
             ("companies", "state_code", "ALTER TABLE companies ADD COLUMN state_code VARCHAR(2)"),
             ("companies", "pincode", "ALTER TABLE companies ADD COLUMN pincode VARCHAR(10)"),
+            ("companies", "contact_phone", "ALTER TABLE companies ADD COLUMN contact_phone VARCHAR(20)"),
             ("invoice_payments", "id", "CREATE TABLE invoice_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER NOT NULL REFERENCES invoices(id), amount REAL NOT NULL, payment_date DATE NOT NULL, payment_method VARCHAR(40), reference VARCHAR(100), notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
             ("invoice_events", "id", "CREATE TABLE invoice_events (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER NOT NULL REFERENCES invoices(id), event_type VARCHAR(40) NOT NULL, old_value VARCHAR(100), new_value VARCHAR(100), description TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
             ("bank_accounts", "id", "CREATE TABLE bank_accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(120) NOT NULL, type VARCHAR(20) NOT NULL DEFAULT 'checking', bank_name VARCHAR(120), account_number VARCHAR(40), iban VARCHAR(34), swift_bic VARCHAR(20), currency VARCHAR(3) NOT NULL DEFAULT 'INR', balance REAL NOT NULL DEFAULT 0.0, is_active BOOLEAN DEFAULT 1, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
@@ -119,7 +120,7 @@ from app.api.routes import (
     transactions, subscriptions, reminders, ai, dashboard, companies,
     time_entries, budgets, health, reports, notifications,
     projects, auth, invoices, recurring_invoices, business_profile,
-    bank_accounts, opportunities,
+    bank_accounts, opportunities, public_share,
 )
 from app.services.auth_service import require_auth
 
@@ -143,6 +144,7 @@ app.include_router(business_profile.router, prefix="/api/business-profile", tags
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(bank_accounts.router, prefix="/api/bank-accounts", tags=["Bank Accounts"], dependencies=_PROTECTED)
 app.include_router(opportunities.router, prefix="/api/opportunities", tags=["Gig Radar"], dependencies=_PROTECTED)
+app.include_router(public_share.router, prefix="/api/public", tags=["Public"])
 
 
 @app.get("/health")

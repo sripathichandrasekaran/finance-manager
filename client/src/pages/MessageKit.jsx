@@ -12,6 +12,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ChatIcon from "@mui/icons-material/Chat";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import PageHeader from "../components/PageHeader.jsx";
 import { MESSAGE_SCENARIOS } from "../constants/messageKit.js";
@@ -92,6 +93,15 @@ export default function MessageKit() {
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => {});
     const who = selectedCompany ? ` for ${selectedCompany.name}` : "";
     setToast({ open: true, msg: `"${s.title}" copied${who} — paste and send` });
+  };
+
+  const sendWhatsApp = (s) => {
+    const text = fillTemplate(s.template, ctx);
+    let phone = selectedCompany?.contact_phone ? selectedCompany.contact_phone.replace(/[^0-9]/g, "") : "";
+    if (phone.length === 10) phone = `91${phone}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+    const who = selectedCompany ? ` to ${selectedCompany.name}` : "";
+    setToast({ open: true, msg: `Opening WhatsApp${who} with "${s.title}"` });
   };
 
   return (
@@ -184,15 +194,26 @@ export default function MessageKit() {
                   {fillTemplate(s.template, ctx)}
                 </Typography>
               </Box>
-              <Button
-                size="small"
-                variant="contained"
-                startIcon={<ContentCopyIcon />}
-                onClick={() => copyMessage(s)}
-                sx={{ alignSelf: "flex-start", textTransform: "none" }}
-              >
-                Copy &amp; send
-              </Button>
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<ContentCopyIcon />}
+                  onClick={() => copyMessage(s)}
+                  sx={{ alignSelf: "flex-start", textTransform: "none" }}
+                >
+                  Copy &amp; send
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<ChatIcon />}
+                  onClick={() => sendWhatsApp(s)}
+                  sx={{ alignSelf: "flex-start", textTransform: "none" }}
+                >
+                  Send on WhatsApp
+                </Button>
+              </Box>
             </CardContent>
           </Card>
         ))}

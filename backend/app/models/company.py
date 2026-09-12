@@ -14,6 +14,7 @@ class Company(Base, TimestampMixin):
     name = Column(String(120), nullable=False)
     industry = Column(String(80), nullable=True)
     contact_email = Column(String(120), nullable=True)
+    contact_phone = Column(String(20), nullable=True)
     notes = Column(Text, nullable=True)
     active = Column(Boolean, default=True, nullable=False)
     hourly_rate = Column(Float, nullable=True)
