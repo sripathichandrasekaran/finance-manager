@@ -29,6 +29,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import SendIcon from "@mui/icons-material/Send";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import SearchIcon from "@mui/icons-material/Search";
@@ -162,6 +163,19 @@ export default function GigRadar() {
       setDetail({ ...detail, status: next });
     }
     reload();
+  };
+
+  const applyOpp = async (opp) => {
+    const hadDraft = Boolean(draftText.trim());
+    if (hadDraft) copyText(draftText);
+    await setOppStatus(opp, "applied");
+    if (opp.url) window.open(opp.url, "_blank", "noopener");
+    setSnack({
+      severity: "success",
+      message: hadDraft
+        ? "Proposal copied \u2014 paste it on the platform to apply."
+        : "Gig opened on the platform \u2014 paste your proposal there to apply.",
+    });
   };
 
   const remove = async (opp) => {
@@ -491,11 +505,23 @@ export default function GigRadar() {
                 </Button>
               </Box>
             </Box>
+
+            <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)" }}>
+              Status here is tracked only inside this app. To actually apply, hit{" "}
+              <b>Apply</b> below \u2014 it copies your draft and opens the gig on{" "}
+              {detail?.source_label || "the platform"} where you paste it in.
+            </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2, flexWrap: "wrap", gap: 0.5 }}>
-          <Button size="small" variant="contained" color="info" onClick={() => setOppStatus(detail, "applied")}>
-            Applied
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            startIcon={<SendIcon />}
+            onClick={() => applyOpp(detail)}
+          >
+            Apply
           </Button>
           <Button size="small" variant="contained" color="secondary" onClick={() => setOppStatus(detail, "replied")}>
             Replied
