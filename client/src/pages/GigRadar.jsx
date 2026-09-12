@@ -328,7 +328,7 @@ export default function GigRadar() {
                         subtitle={
                           loading
                             ? "Finding freelance gigs that match your profile\u2026"
-                            : "Hit \u201cScan sources\u201d to pull fresh gigs from Reddit (r/forhire, r/slavelance), Freelancer.com, Remotive, RemoteOK and WeWorkRemotely."
+                            : "Hit \u201cScan sources\u201d to pull fresh gigs from Reddit (r/forhire, r/slavelance), Freelancer.com, Truelancer, Remotive, RemoteOK and WeWorkRemotely."
                         }
                       />
                     </TableCell>

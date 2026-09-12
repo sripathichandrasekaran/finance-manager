@@ -286,6 +286,83 @@ def collect_reddit(
 
 
 # --------------------------------------------------------------------------- #
+# Truelancer.com (open JSON API — no key required, real freelance projects)
+# --------------------------------------------------------------------------- #
+
+def collect_truelancer(pages: int = 2) -> list[dict]:
+    """Pull recent open freelance projects from truelancer's public v1 API.
+
+    Projects are the genuine marketplace kind (one-off gigs posted minutes
+    ago, with budget + currency), so bidding on them fast is the point. The
+    endpoint is flaky — retried with backoff per page.
+
+    Shape: payload["projects"]["data"] = [ { id, title, description,
+      created_at, budget, currency, link, countryObj, city, hiring_type,
+      skills: [{name}] } ]
+    """
+    out: list[dict] = []
+    for page in range(1, max(1, pages) + 1):
+        payload = None
+        for _attempt in range(3):
+            try:
+                payload = _http_json(f"https://api.truelancer.com/api/v1/projects?page={page}")
+                break
+            except Exception:  # noqa: BLE001
+                time.sleep(2)
+        if not payload:
+            logger.warning("GigRadar: Truelancer page %s failed after retries", page)
+            continue
+        projects = ((payload or {}).get("projects") or {}).get("data") or []
+        for p in projects:
+            if not isinstance(p, dict):
+                continue
+            title = p.get("title") or ""
+            skills = [s.get("name", "") for s in (p.get("skills") or []) if isinstance(s, dict)]
+            skills_txt = ", ".join([s for s in skills if s])
+            if not _is_web_role(f"{title} {skills_txt}"):
+                continue
+
+            created = p.get("created_at") or ""
+            posted_at = None
+            if created:
+                try:
+                    posted_at = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                except Exception:  # noqa: BLE001
+                    posted_at = None
+
+            budget_val = p.get("budget")
+            budget_min = None
+            if isinstance(budget_val, (int, float)) and budget_val:
+                budget_min = float(budget_val)
+
+            ctry = p.get("countryObj") or {}
+            location = ctry.get("name") or p.get("country_code") or ""
+            if p.get("city"):
+                location = f"{p.get('city')}, {location}".strip(", ")
+
+            out.append({
+                "source": "truelancer",
+                "source_key": f"truelancer:{p.get('id', '')}",
+                "source_label": "Truelancer",
+                "title": title,
+                "description": (f"Skills: {skills_txt or 'n/a'}\n"
+                                f"Budget: {budget_val or 'n/a'} {p.get('currency') or ''}\n"
+                                f"Hiring: {p.get('hiring_type') or 'n/a'}\n"
+                                f"Proposals: {p.get('total_proposals') or 0}\n\n"
+                                f"{(p.get('description') or '')[:3000]}"),
+                "url": p.get("link") or "",
+                "posted_at": posted_at,
+                "budget_min": budget_min,
+                "budget_max": None,
+                "currency": p.get("currency") or None,
+                "location": location or None,
+                "skills": skills_txt or None,
+            })
+        time.sleep(1)
+    return out
+
+
+# --------------------------------------------------------------------------- #
 # WeWorkRemotely (public RSS feed, no key required)
 # --------------------------------------------------------------------------- #
 

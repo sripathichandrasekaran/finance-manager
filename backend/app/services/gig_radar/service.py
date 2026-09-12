@@ -75,7 +75,7 @@ def _prune_stale(repo: OpportunityRepository) -> int:
         title = opp.title or ""
         if opp.source in ("remotive", "remoteok", "rss"):
             ok = collectors._is_web_job_title(title)
-        elif opp.source in ("reddit", "freelancer"):
+        elif opp.source in ("reddit", "freelancer", "truelancer"):
             ok = collectors._is_web_role(title)
         else:
             ok = True
@@ -114,6 +114,7 @@ def collect_all() -> dict:
                     errored.append(f"reddit: {exc}")
 
             collectors_list = [
+                ("truelancer", collectors.collect_truelancer),
                 ("remotive", collectors.collect_remotive),
                 ("remoteok", collectors.collect_remoteok),
                 ("weworkremotely", collectors.collect_weworkremotely),
