@@ -147,9 +147,10 @@ export default function GigRadar() {
   const doRefresh = async () => {
     const result = await dispatch(refreshRadar()).unwrap().catch((e) => e);
     if (result && result.added !== undefined) {
+      const cleaned = result.pruned ? `, ${result.pruned} outdated removed` : "";
       setSnack({
         severity: "success",
-        message: `Radar scan complete \u2014 ${result.added} new, ${result.updated} updated.`,
+        message: `Radar scan complete \u2014 ${result.added} new, ${result.updated} updated${cleaned}.`,
       });
     }
     reload();
@@ -232,7 +233,7 @@ export default function GigRadar() {
     <Box>
       <PageHeader
         title="Gig Radar"
-        description="Freelance opportunities captured from Reddit + job feeds, scored against your profile"
+        description="Freelance opportunities captured from Reddit, Freelancer.com + job feeds, scored against your profile"
         actions={
           <Button
             variant="contained"
@@ -327,7 +328,7 @@ export default function GigRadar() {
                         subtitle={
                           loading
                             ? "Finding freelance gigs that match your profile\u2026"
-                            : "Hit \u201cScan sources\u201d to pull fresh posts from Reddit (r/forhire, r/slavelance), Remotive, RemoteOK and WeWorkRemotely."
+                            : "Hit \u201cScan sources\u201d to pull fresh gigs from Reddit (r/forhire, r/slavelance), Freelancer.com, Remotive, RemoteOK and WeWorkRemotely."
                         }
                       />
                     </TableCell>

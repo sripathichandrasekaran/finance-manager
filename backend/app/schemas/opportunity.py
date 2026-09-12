@@ -50,6 +50,7 @@ class OpportunityStats(BaseModel):
 class RefreshResult(BaseModel):
     added: int = 0
     updated: int = 0
+    pruned: int = 0
     errored: list[str] = Field(default_factory=list)
 
 

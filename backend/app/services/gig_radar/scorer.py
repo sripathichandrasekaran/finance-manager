@@ -3,6 +3,12 @@
 Scores are fully deterministic — no AI required. Claude is only used later for
 the proposal draft, never for ranking. Positive service profile terms add
 points; show-stopper terms (other stacks) cancel a chunk of them.
+
+The profile mirrors Sripathi's services (frontend dev, Tamil Nadu, India):
+  - Landing pages (React, Tailwind, Framer)       $100-300
+  - Business websites (WordPress, Elementor)      $150-500
+  - Bug fixes & redesigns (WP, React, Wix, etc.)  $50-200
+  - React frontends / dashboards (TS, MUI, Redux) $150-700
 """
 
 from __future__ import annotations
@@ -16,42 +22,77 @@ POSITIVE_TERMS: dict[str, int] = {
     "front end": 12,
     "next.js": 10,
     "nextjs": 10,
+    "wordpress": 10,
+    "elementor": 10,
     "javascript": 9,
     "typescript": 9,
-    "wordpress": 9,
     "landing page": 9,
-    "dashboard": 8,
+    "web design": 9,
+    "web designer": 9,
+    "business website": 9,
     "shopify": 8,
+    "wix": 8,
+    "squarespace": 8,
+    "woocommerce": 8,
+    "webflow": 8,
+    "dashboard": 8,
     "tailwind": 8,
+    "framer": 7,
+    "redesign": 7,
+    "bug fix": 7,
     "figma": 7,
     "web development": 7,
     "web developer": 7,
-    "web application": 6,
-    "web dev": 6,
-    "website": 6,
     "html": 6,
+    "html5": 6,
     "css": 6,
+    "css3": 6,
     "mui": 6,
+    "bootstrap": 6,
     "redux": 6,
     "ui developer": 6,
+    "web application": 6,
+    "web app": 6,
+    "web dev": 6,
+    "website": 6,
+    "saas website": 6,
+    "startup website": 6,
     "ui/ux": 5,
     "responsive": 5,
     "ecommerce": 5,
     "e-commerce": 5,
+    "bugs": 5,
     "saas": 4,
     "web": 2,
     "ui": 2,
     "ux": 2,
 }
 
-# Stacks that would take the work away from a React/web generalist.
+# Stacks/roles that would take the work away from a React/web generalist.
 NEGATIVE_TERMS: tuple[str, ...] = (
+    # mobile / cross-platform
     "react native", "flutter", "android", "ios", "swift", "kotlin",
-    "python", "django", "fastapi", "backend engineer", "backend developer",
-    "data science", "machine learning", "nlp", "deep learning",
-    "devops", "kubernetes", "docker", "aws lambda", "terraform",
-    ".net", "asp.net", "c#", "java", "spring boot", "golang", "rust",
+    # backend / other languages
+    "backend engineer", "backend developer", "python", "django", "fastapi",
+    "node.js api", ".net", "asp.net", "c#", "java", "spring boot",
+    "golang", "rust", "c++",
+    # qa / testing
+    "qa engineer", "qa tester", "quality assurance", "quality engineer",
+    "manual testing", "test automation", "automation tester",
+    # data / ai
+    "data science", "data scientist", "data analyst", "data engineer",
+    "machine learning", "ml engineer", "deep learning", "ai engineer",
+    # infra
+    "devops", "kubernetes", "docker", "terraform", "aws lambda",
+    "cloud engineer", "serverless", "sysadmin", "system administrator",
+    "network engineer", "database administrator", "dba",
+    # security
+    "security engineer", "penetration testing",
+    # non-web services
     "game development", "unity", "unreal", "embedded", "hardware",
+    "blockchain", "cryptocurrency", "smart contract", "salesforce", "sap",
+    "digital marketing", "social media marketing", "content marketing",
+    "content writing", "copywriting", "video editing", "logo design",
 )
 
 

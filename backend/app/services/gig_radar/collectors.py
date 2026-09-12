@@ -1,11 +1,13 @@
 """Schedulable collectors for the Gig Radar.
 
 Every collector is stateless: it returns a list of normalized opportunity
-dicts and never touches the database. Only no-key (public) sources are used —
-Reddit's public JSON endpoints and the free JSON APIs of Remotive/RemoteOK.
-Each dict carries:
+dicts and never touches the database. Sources are Reddit (r/forhire-style
+gigs), Freelancer.com (config-gated API key), and the free JSON/RSS feeds of
+Remotive/RemoteOK/WeWorkRemotely. Posts/jobs are pre-filtered so only web /
+frontend work the user sells survives; QA/DevOps/data/other-stack roles are
+dropped. Each dict carries:
 
-  source        e.g. "reddit" | "remotive" | "remoteok"
+  source        e.g. "reddit" | "freelancer" | "remotive" | "remoteok" | "rss"
   source_key    stable unique key for dedupe (f"{source}:{remote_id}")
   source_label  human label, e.g. "r/forhire" or the company name
   title, description, url, posted_at, location, budget_*, currency, skills
@@ -49,18 +51,103 @@ _HIRING_MARKERS = (
     "build an",
 )
 
-_FRONTEND_TERMS = (
-    "react", "frontend", "front-end", "front end", "javascript", "typescript",
-    "next.js", "nextjs", "remix", "wordpress", "web developer", "web development",
-    "web application", "web dev", "ui developer", "ui/ux", "landing page",
-    "tailwind", "dashboard", "shopify", "ecommerce", "e-commerce",
+# Terms that signal a gig is in the user's lane (web/frontend). Feed jobs are
+# kept only when the title signals web work; non-web roles (QA, DevOps, data,
+# other stacks) are dropped even if they mention "web" in passing.
+_WEB_STRONG = (
+    "react", "frontend", "front-end", "front end", "front end developer",
+    "javascript", "typescript", "next.js", "nextjs", "remix", "astro",
+    "wordpress", "elementor", "woocommerce", "shopify", "wix", "squarespace",
+    "webflow", "framer", "landing page", "tailwind", "mui", "bootstrap",
+    "web developer", "web development", "web design", "web designer",
+    "ui developer", "ui/ux", "dashboard", "html", "html5", "css", "css3",
+)
+
+_WEB_WEAK = (
+    "web", "webapp", "web application", "website", "web app", "saas",
+    "ecommerce", "e-commerce", "redesign", "bug fix", "responsive",
+)
+
+# Short terms that must not match as substrings ("web" inside "Webnotics",
+# "qa" inside "aquarium"). Matched as whole words instead.
+_SHORT_WORDY = {"web", "qa", "test", "ui", "ux", "css", "html", "data"}
+
+
+def _has(term: str, text: str) -> bool:
+    if term in _SHORT_WORDY:
+        return re.search(
+            rf"(?<![a-z0-9]){re.escape(term)}(?![a-z0-9])", text
+        ) is not None
+    return term in text
+
+_NON_WEB_ROLE = (
+    # engineering / other stacks
+    "backend", "back end", "data", "ml engineer", "machine learning",
+    "ai engineer", "devops", "dev ops", "sre", "qa", "quality", "test",
+    "testing", "security", "system", "sysadmin", "network", "database", "dba",
+    "python", "java", "golang", "rust", "c++", "c#", ".net", "android", "ios",
+    "swift", "kotlin", "flutter", "react native", "unity", "unreal", "game",
+    "embedded", "hardware", "blockchain", "cryptocurrency", "salesforce",
+    "cloud engineer", "terraform", "docker", "kubernetes",
+    # non-dev / non-technical roles (platform names must not fake a dev job)
+    "support", "customer service", "operations", "sales", "marketing",
+    "customer", "associate", "coordinator", "assistant", "product manager",
+    "project manager", "account manager", "recruiter", "human resources",
+    "head of", "director", "finance", "consultant", "admin", "copywriting",
+    "content writer", "data entry", "virtual assistant",
+)
+
+# Role words that kill a feed job even when a platform like Shopify or
+# Squarespace appears in the title ("Head of Operations - Shopify").
+_ROLE_BLOCKERS = (
+    "support", "customer service", "operations", "sales", "marketing",
+    "customer", "associate", "coordinator", "assistant", "product manager",
+    "project manager", "account manager", "recruiter", "human resources",
+    "head of", "director", "finance", "consultant", "admin", "copywriting",
+    "content writer", "data entry", "virtual assistant", "qa", "quality",
+    "tester", "testing", "data scientist", "data analyst", "data engineer",
+    "devops", "sysadmin", "system administrator", "backend", "ml engineer",
+    "machine learning", "ai engineer", "brand",
 )
 
 
-def _http_json(url: str) -> dict | list | None:
+def _is_web_role(blob: str) -> bool:
+    """Tolerant check for project-style listings (Reddit, Freelancer.com).
+
+    A strong web term wins even if a non-web word appears ("React + Python
+    backend"); a listing with no strong web term and any non-web role signal
+    is rejected."""
+    blob = blob.lower()
+    strong = [t for t in _WEB_STRONG if _has(t, blob)]
+    nonweb = [t for t in _NON_WEB_ROLE if _has(t, blob)]
+    if strong:
+        if nonweb and len(nonweb) > len(strong) * 2:
+            return False
+        return True
+    if nonweb:
+        return False
+    return any(_has(weak, blob) for weak in _WEB_WEAK)
+
+
+def _is_web_job_title(title: str) -> bool:
+    """Strict check for job-board titles (Remotive/RemoteOK/WWR).
+
+    Their tags/descriptions are keyword piles, so only the job title counts.
+    Any non-dev role blocker wins over every platform/web word, so
+    "Squarespace: Customer Support Associate" and "Head of Operations
+    - Shopify" are dropped even though they mention web platforms."""
+    t = title.lower()
+    if any(_has(block, t) for block in _ROLE_BLOCKERS):
+        return False
+    if any(_has(x, t) for x in _WEB_STRONG):
+        return True
+    return any(_has(weak, t) for weak in _WEB_WEAK)
+
+
+def _http_json(url: str, headers: dict | None = None) -> dict | list | None:
     import urllib.request
 
-    req = urllib.request.Request(url, headers=_UA)
+    req = urllib.request.Request(url, headers=headers or _UA)
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
         return json.loads(resp.read().decode("utf-8", "replace"))
 
@@ -72,11 +159,6 @@ def _is_hiring_post(title: str) -> bool:
     if "for sale" in t:
         return False
     return any(marker in t for marker in _HIRING_MARKERS)
-
-
-def _matches_frontend(blob: str) -> bool:
-    blob = blob.lower()
-    return any(term in blob for term in _FRONTEND_TERMS)
 
 
 def _parse_k_currency(text) -> float | None:
@@ -111,11 +193,63 @@ def _salary_bounds(salary_text) -> tuple:
 # Reddit
 # --------------------------------------------------------------------------- #
 
-def collect_reddit(subreddits) -> list[dict]:
+# Reddit increasingly 403s anonymous `.json` scraping from many networks.
+# Registering a free "script" app at reddit.com/prefs/apps fixes it: app-only
+# (client_credentials) OAuth reads public subreddit listings reliably at
+# ~60 req/min. When no client id/secret are configured we still try the
+# anonymous endpoints (which may 403 in the user's network).
+_REDDIT_APP_UA = "finance-manager-gig-radar/1.0 (freelance opportunity feed)"
+
+
+def _reddit_app_token(client_id: str, client_secret: str) -> str | None:
+    import base64
+    import urllib.parse
+    import urllib.request
+
+    cred = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    data = urllib.parse.urlencode({"grant_type": "client_credentials"}).encode()
+    req = urllib.request.Request(
+        "https://www.reddit.com/api/v1/access_token",
+        data=data,
+        method="POST",
+        headers={
+            "Authorization": f"Basic {cred}",
+            "User-Agent": _REDDIT_APP_UA,
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            body = json.loads(resp.read().decode("utf-8", "replace"))
+        token = body.get("access_token")
+        if token:
+            logger.info("GigRadar: Reddit app-only OAuth token acquired")
+        return token
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("GigRadar: Reddit app-only token failed (%s); falling back to anonymous", exc)
+        return None
+
+
+def collect_reddit(
+    subreddits,
+    client_id: str = "",
+    client_secret: str = "",
+) -> list[dict]:
     out: list[dict] = []
+    token = None
+    if client_id and client_secret:
+        token = _reddit_app_token(client_id, client_secret)
+    base_url = "https://oauth.reddit.com" if token else "https://www.reddit.com"
+    headers = dict(_UA)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+        headers["User-Agent"] = _REDDIT_APP_UA
+
     for sub in subreddits:
         try:
-            payload = _http_json(f"https://www.reddit.com/r/{sub}/new.json?limit=100")
+            payload = _http_json(
+                f"{base_url}/r/{sub}/new.json?limit=100&raw_json=1", headers=headers
+            )
             children = (payload or {}).get("data", {}).get("children", [])
         except Exception as exc:  # noqa: BLE001
             logger.warning("GigRadar: Reddit r/%s failed: %s", sub, exc)
@@ -125,13 +259,16 @@ def collect_reddit(subreddits) -> list[dict]:
             title = post.get("title", "") or ""
             if not _is_hiring_post(title):
                 continue
+            body = post.get("selftext") or ""
+            if not _is_web_role(f"{title} {body[:600]}"):
+                continue
             permalink = post.get("permalink") or ""
             out.append({
                 "source": "reddit",
                 "source_key": f"reddit:{post.get('id', '')}",
                 "source_label": f"r/{sub}",
                 "title": title,
-                "description": (post.get("selftext") or "")[:6000] or "_(no description)_",
+                "description": body[:6000] or "_(no description)_",
                 "url": f"https://www.reddit.com{permalink}" if permalink else (
                     post.get("url") or ""
                 ),
@@ -144,7 +281,7 @@ def collect_reddit(subreddits) -> list[dict]:
                 "location": "Remote" if "remote" in title.lower() else None,
                 "skills": None,
             })
-        time.sleep(2)  # stay well under Reddit's ~10 req/min unauthenticated limit
+        time.sleep(2)
     return out
 
 
@@ -183,8 +320,7 @@ def collect_weworkremotely() -> list[dict]:
         guid = _field("guid")
         desc_html = _field("description")
 
-        blob = f"{title} {skills} {category}"
-        if not _matches_frontend(blob):
+        if not _is_web_job_title(title):
             continue
 
         posted_at = None
@@ -230,8 +366,7 @@ def collect_remotive() -> list[dict]:
         title = job.get("title") or ""
         tpl = job.get("tags") or []
         tags = ", ".join(tpl) if isinstance(tpl, list) else str(tpl or "")
-        blob = f"{title} {tags}"
-        if not _matches_frontend(blob):
+        if not _is_web_job_title(title):
             continue
         published = job.get("publication_date")
         try:
@@ -273,8 +408,7 @@ def collect_remoteok() -> list[dict]:
     for job in jobs[1:]:
         position = job.get("position") or ""
         tags = ", ".join(job.get("tags") or [])
-        blob = f"{position} {tags}"
-        if not _matches_frontend(blob):
+        if not _is_web_job_title(position):
             continue
         ts = job.get("date")
         posted_at = None
@@ -307,5 +441,93 @@ def collect_remoteok() -> list[dict]:
             "currency": "USD",
             "location": location,
             "skills": tags or None,
+        })
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Freelancer.com (real freelance projects with budgets — needs a free API key)
+# --------------------------------------------------------------------------- #
+
+def collect_freelancer(api_key: str) -> list[dict]:
+    """Pull recent open projects from Freelancer.com's public search API.
+
+    The key comes from the user's Freelancer account (settings -> API key);
+    without it this collector stays empty. Auth is best-effort: we send the
+    classic `freelancer-oauth-v1` header AND an `api_key` query param so either
+    the V1 or the OAuth flavour works. Failures are logged, never fatal.
+
+    Project shape (v0.1 /projects/active):
+      { status, result: { projects: [ { id, title, description, time_submitted,
+          seo_url, url, currency: {code, sign}, budget: {minimum, maximum},
+          type: "fixed"|"hourly", jobs: [ {name}, ... ], owner: {...} } ] } }
+    """
+    out: list[dict] = []
+    if not api_key:
+        return out
+    headers = dict(_UA)
+    headers["freelancer-oauth-v1"] = api_key
+    url = (
+        "https://www.freelancer.com/api/projects/0.1/projects/active/"
+        "?limit=50&compact=true&full_description=true"
+        "&job_details=true&currency_details=true&user_details=false"
+        f"&api_key={api_key}"
+    )
+    try:
+        payload = _http_json(url, headers=headers)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("GigRadar: Freelancer.com failed: %s", exc)
+        return out
+    if not isinstance(payload, dict):
+        return out
+    result = payload.get("result") or payload
+    projects = result.get("projects") if isinstance(result, dict) else None
+    if not isinstance(projects, list):
+        logger.warning("GigRadar: Freelancer.com returned no project list: %s",
+                       (payload.get("status") or payload)[:200])
+        return out
+
+    for proj in projects:
+        if not isinstance(proj, dict):
+            continue
+        title = proj.get("title") or ""
+        jobs = [j.get("name", "") for j in (proj.get("jobs") or []) if isinstance(j, dict)]
+        skills = ", ".join([j for j in jobs if j])
+        blob = f"{title} {skills}"
+        if not _is_web_role(blob):
+            continue
+
+        budget = proj.get("budget") or {}
+        currency = proj.get("currency") or {}
+        proj_type = proj.get("type") or "fixed"
+        budget_min = budget.get("minimum")
+        budget_max = budget.get("maximum")
+
+        seo = proj.get("seo_url") or ""
+        url = proj.get("url") or (
+            f"https://www.freelancer.com/projects/{seo}" if seo else ""
+        )
+        aid = proj.get("time_submitted")
+        posted_at = None
+        if isinstance(aid, (int, float)):
+            posted_at = datetime.fromtimestamp(aid, tz=timezone.utc)
+
+        owner = proj.get("owner") or {}
+        out.append({
+            "source": "freelancer",
+            "source_key": f"freelancer:{proj.get('id', '')}",
+            "source_label": "Freelancer.com",
+            "title": title,
+            "description": (f"Type: {proj_type}\nSkills: {skills or 'n/a'}"
+                            f"\nOwner: {owner.get('username') or 'n/a'} "
+                            f"({owner.get('country') or 'n/a'})"
+                            f"\n\n{(proj.get('description') or '')[:3000]}"),
+            "url": url,
+            "posted_at": posted_at,
+            "budget_min": float(budget_min) if budget_min not in (None, "") else None,
+            "budget_max": float(budget_max) if budget_max not in (None, "") else None,
+            "currency": currency.get("code") or None,
+            "location": owner.get("country") or None,
+            "skills": skills or None,
         })
     return out

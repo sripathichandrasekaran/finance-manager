@@ -64,6 +64,27 @@ def _upsert(repo: OpportunityRepository, raw: dict) -> Optional[str]:
     return None
 
 
+def _prune_stale(repo: OpportunityRepository) -> int:
+    """Delete lingering 'new' rows that no longer pass the current role
+    filter. Won/applied/drafted/archived rows are never touched, so user
+    progress is preserved when the filter tightens over time."""
+    removed = 0
+    for opp in repo.list(page=1, page_size=10000):
+        if opp.status != "new":
+            continue
+        title = opp.title or ""
+        if opp.source in ("remotive", "remoteok", "rss"):
+            ok = collectors._is_web_job_title(title)
+        elif opp.source in ("reddit", "freelancer"):
+            ok = collectors._is_web_role(title)
+        else:
+            ok = True
+        if not ok:
+            repo.delete(opp.id)
+            removed += 1
+    return removed
+
+
 def collect_all() -> dict:
     """Run every enabled collector and upsert results. Not thread-safe by
     design — always call through collect_all_guarded() with the lock."""
@@ -78,7 +99,11 @@ def collect_all() -> dict:
             subreddits = [s.strip() for s in settings.RADAR_SUBREDDITS.split(",") if s.strip()]
             if subreddits:
                 try:
-                    for raw in collectors.collect_reddit(subreddits):
+                    for raw in collectors.collect_reddit(
+                        subreddits,
+                        settings.RADAR_REDDIT_CLIENT_ID,
+                        settings.RADAR_REDDIT_CLIENT_SECRET,
+                    ):
                         outcome = _upsert(repo, raw)
                         if outcome == "added":
                             added += 1
@@ -88,11 +113,20 @@ def collect_all() -> dict:
                     logger.exception("GigRadar: Reddit collection failed")
                     errored.append(f"reddit: {exc}")
 
-            for name, collector in (
+            collectors_list = [
                 ("remotive", collectors.collect_remotive),
                 ("remoteok", collectors.collect_remoteok),
                 ("weworkremotely", collectors.collect_weworkremotely),
-            ):
+            ]
+            if settings.RADAR_FREELANCER_API_KEY:
+                collectors_list.insert(
+                    0,
+                    ("freelancer", lambda: collectors.collect_freelancer(
+                        settings.RADAR_FREELANCER_API_KEY
+                    )),
+                )
+
+            for name, collector in collectors_list:
                 try:
                     for raw in collector():
                         outcome = _upsert(repo, raw)
@@ -104,17 +138,26 @@ def collect_all() -> dict:
                     logger.exception("GigRadar: %s collection failed", name)
                     errored.append(f"{name}: {exc}")
 
-        if added:
+        pruned = 0
+        if settings.RADAR_ENABLED:
+            try:
+                pruned = _prune_stale(repo)
+            except Exception:  # noqa: BLE001
+                logger.exception("GigRadar: stale-row prune failed")
+
+        if added or pruned:
             notify(
                 db,
-                title=f"Gig Radar: {added} new opportunity{'ies' if added != 1 else 'y'}",
-                message=f"{added} new gig{'s' if added != 1 else ''} captured from your sources.",
+                title=(f"Gig Radar: {added} new opportunity{'ies' if added != 1 else 'y'}"
+                       f"{' + ' + str(pruned) + ' cleaned' if pruned else ''}"),
+                message=(f"{added} new gig{'s' if added != 1 else ''} captured"
+                         f"{f', {pruned} outdated removed' if pruned else ''}."),
                 type_=NotificationType.SYSTEM,
                 link="/radar",
             )
         elif updated:
             broadcast_system("Gig Radar refreshed", "Sources checked — no new opportunities.")
-        return {"added": added, "updated": updated, "errored": errored}
+        return {"added": added, "updated": updated, "pruned": pruned, "errored": errored}
     finally:
         db.close()
 
@@ -133,7 +176,7 @@ def _collect_all_guarded(force: bool = False) -> Optional[dict]:
 
 def refresh_now() -> dict:
     """Force a collection pass (called by the manual refresh endpoint)."""
-    return _collect_all_guarded(force=True) or {"added": 0, "updated": 0, "errored": []}
+    return _collect_all_guarded(force=True) or {"added": 0, "updated": 0, "pruned": 0, "errored": []}
 
 
 def maybe_collect() -> Optional[dict]:
@@ -156,11 +199,18 @@ def draft_proposal(db: Session, opp) -> Optional[str]:
         client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         system = (
             "You write short, specific freelance proposals for a frontend "
-            "developer (React, landing pages, WordPress). No placeholders, no "
+            "developer, Sripathi Chandrasekaran (Tamil Nadu, India, remote). "
+            "His services: landing pages (React, Tailwind, Framer), business "
+            "websites (WordPress, Elementor, Wix, Squarespace, Shopify), "
+            "custom React frontends/dashboards (TypeScript, MUI, Redux), and "
+            "bug fixes/redesigns. Typical delivery 3-7 days, 7-day post-launch "
+            "support, responsive mobile-first builds. No placeholders, no "
             "robotic filler — sound human and confident."
         )
         prompt = (
             "Write a proposal for this opportunity. Keep it under 130 words.\n"
+            "Match the specific ask: if it mentions WordPress/shopify/React, "
+            "lead with that exact skill.\n"
             "Include: who you are (Sripathi — frontend developer), a concrete "
             "reason you fit THIS post, and a tiny trust signal (fast turnaround, "
             "7-day support). Do not include placeholders in [brackets].\n\n"

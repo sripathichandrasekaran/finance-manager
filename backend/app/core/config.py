@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     RADAR_INTERVAL_MINUTES: int = 15
     RADAR_SUBREDDITS: str = "forhire,slavelance"
 
+    # Optional credentials that unlock better Gig Radar sources while staying
+    # free:
+    #   RADAR_REDDIT_CLIENT_ID/SECRET — a free Reddit "script" app
+    #     (reddit.com/prefs/apps). App-only OAuth fixes the 403 the anonymous
+    #     public JSON endpoints hit from many networks. Blank -> anonymous.
+    #   RADAR_FREELANCER_API_KEY — Freelancer.com account API key, surfaces
+    #     real one-off freelance projects with budgets. Blank -> source off.
+    RADAR_REDDIT_CLIENT_ID: str = ""
+    RADAR_REDDIT_CLIENT_SECRET: str = ""
+    RADAR_FREELANCER_API_KEY: str = ""
+
     model_config = SettingsConfigDict(
         env_file=("../.env", ".env"),
         env_file_encoding="utf-8",
