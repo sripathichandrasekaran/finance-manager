@@ -31,6 +31,7 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SendIcon from "@mui/icons-material/Send";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import CloseIcon from "@mui/icons-material/Close";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import SearchIcon from "@mui/icons-material/Search";
 import EmptyState from "../components/EmptyState.jsx";
@@ -505,7 +506,7 @@ export default function GigRadar() {
 
       {/* Detail dialog */}
       <Dialog open={Boolean(detail)} onClose={() => setDetail(null)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ pr: 8 }}>
+        <DialogTitle sx={{ pr: 7 }}>
           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
             <Box>
               <Typography sx={{ fontWeight: 700, fontSize: 16, lineHeight: 1.35 }}>{detail?.title}</Typography>
@@ -519,6 +520,14 @@ export default function GigRadar() {
               </Box>
             </Box>
           </Box>
+          <IconButton
+            size="small"
+            onClick={() => setDetail(null)}
+            sx={{ position: "absolute", top: 8, right: 8 }}
+            aria-label="Close"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -547,6 +556,7 @@ export default function GigRadar() {
               <TextField
                 multiline
                 minRows={5}
+                maxRows={12}
                 fullWidth
                 size="small"
                 value={draftText}
@@ -554,7 +564,16 @@ export default function GigRadar() {
                 placeholder="Generate a tailored proposal with AI, or write your own here."
                 disabled={drafting}
               />
-              <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  mt: 1.5,
+                  mb: 0.5,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
                 <Button
                   size="small"
                   startIcon={drafting ? <CircularProgress size={14} color="inherit" /> : <AutoAwesomeIcon />}
@@ -572,7 +591,7 @@ export default function GigRadar() {
               </Box>
             </Box>
 
-            <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)" }}>
+            <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)", mb: 0.5 }}>
               Status here is tracked only inside this app. To actually apply, hit{" "}
               <b>Apply</b> below \u2014 it copies your draft and opens the gig on{" "}
               {detail?.source_label || "the platform"} where you paste it in.
