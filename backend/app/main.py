@@ -119,7 +119,7 @@ from app.api.routes import (
     transactions, subscriptions, reminders, ai, dashboard, companies,
     time_entries, budgets, health, reports, notifications,
     projects, auth, invoices, recurring_invoices, business_profile,
-    bank_accounts,
+    bank_accounts, opportunities,
 )
 from app.services.auth_service import require_auth
 
@@ -142,6 +142,7 @@ app.include_router(recurring_invoices.router, prefix="/api/recurring-invoices", 
 app.include_router(business_profile.router, prefix="/api/business-profile", tags=["Business Profile"], dependencies=_PROTECTED)
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(bank_accounts.router, prefix="/api/bank-accounts", tags=["Bank Accounts"], dependencies=_PROTECTED)
+app.include_router(opportunities.router, prefix="/api/opportunities", tags=["Gig Radar"], dependencies=_PROTECTED)
 
 
 @app.get("/health")

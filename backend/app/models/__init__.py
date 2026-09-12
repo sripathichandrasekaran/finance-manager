@@ -13,6 +13,7 @@ from app.models.ai_session import AISession
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.business_profile import BusinessProfile
 from app.models.bank_account import BankAccount, BankAccountType
+from app.models.opportunity import Opportunity
 
 __all__ = [
     "Base",
@@ -38,4 +39,5 @@ __all__ = [
     "BusinessProfile",
     "BankAccount",
     "BankAccountType",
+    "Opportunity",
 ]

@@ -183,12 +183,28 @@ def _generate_recurring_invoices() -> None:
         db.close()
 
 
+def _collect_opportunities() -> None:
+    """Run the Gig Radar collectors when the interval has elapsed."""
+    try:
+        from app.services.gig_radar.service import maybe_collect
+
+        result = maybe_collect()
+        if not result:
+            return
+        added, updated = result.get("added", 0), result.get("updated", 0)
+        if added or updated:
+            print(f"[Scheduler] Gig Radar: {added} new, {updated} updated")
+    except Exception as exc:  # noqa: BLE001
+        print(f"[Scheduler] Gig Radar collection failed: {exc}")
+
+
 def _run_tick() -> None:
     _generate_daily_summary()
     _generate_subscription_reminders()
     _check_budget_alerts()
     _process_custom_reminders()
     _generate_recurring_invoices()
+    _collect_opportunities()
 
 
 def _loop() -> None:

@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     EMAIL_FROM: str = "noreply@financemanager.local"
     EMAIL_FROM_NAME: str = "Finance Manager"
 
+    # Gig Radar — captures freelance opportunities from public (no-key) sources
+    # into a scored in-app queue. Collection is throttled to the configured
+    # interval by the scheduler; sources are enabled on/off in code.
+    RADAR_ENABLED: bool = True
+    RADAR_INTERVAL_MINUTES: int = 15
+    RADAR_SUBREDDITS: str = "forhire,slavelance"
+
     model_config = SettingsConfigDict(
         env_file=("../.env", ".env"),
         env_file_encoding="utf-8",

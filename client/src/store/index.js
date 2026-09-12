@@ -12,6 +12,7 @@ import projectsReducer from "./slices/projectsSlice.js";
 import authReducer, { reset as authReset } from "./slices/authSlice.js";
 import invoicesReducer from "./slices/invoicesSlice.js";
 import bankAccountsReducer from "./slices/bankAccountSlice.js";
+import opportunitiesReducer from "./slices/opportunitiesSlice.js";
 
 const appReducer = combineReducers({
   transactions: transactionsReducer,
@@ -26,6 +27,7 @@ const appReducer = combineReducers({
   auth: authReducer,
   invoices: invoicesReducer,
   bankAccounts: bankAccountsReducer,
+  opportunities: opportunitiesReducer,
 });
 
 function rootReducer(state, action) {

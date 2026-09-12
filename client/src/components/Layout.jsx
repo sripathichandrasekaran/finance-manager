@@ -36,7 +36,7 @@ const NAV_GROUPS = [
   },
   {
     title: "Freelancer Tools",
-    ids: ["time", "budget", "reports"],
+    ids: ["time", "budget", "reports", "radar"],
   },
   {
     title: "Assistant",
