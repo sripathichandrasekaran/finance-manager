@@ -9,6 +9,7 @@ from app.schemas.opportunity import (
     OpportunityRead,
     OpportunityStats,
     OpportunityUpdate,
+    PipelineSummary,
     RefreshResult,
     MarkWonPayload,
 )
@@ -65,6 +66,11 @@ def list_opportunities(
 @router.get("/stats", response_model=OpportunityStats)
 def opportunity_stats(db: Session = Depends(get_db)):
     return OpportunityRepository(db).stats()
+
+
+@router.get("/pipeline", response_model=PipelineSummary)
+def pipeline_summary(db: Session = Depends(get_db)):
+    return radar.pipeline_summary(db)
 
 
 @router.post("/refresh", response_model=RefreshResult)

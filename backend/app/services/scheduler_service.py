@@ -198,6 +198,52 @@ def _collect_opportunities() -> None:
         print(f"[Scheduler] Gig Radar collection failed: {exc}")
 
 
+_FOLLOW_UP_SILENCE_DAYS = {"applied": 3, "replied": 2}
+
+
+def _check_gig_follow_ups() -> None:
+    """Nudge gigs that went silent after an application or reply. A single
+    polite round-two ping is often what turns a maybe into a client.
+    Idempotent per gig — the notification title doubles as the dedupe key."""
+    try:
+        from app.services.gig_radar.service import pipeline_summary  # noqa: F401
+        from app.repositories.opportunity_repository import OpportunityRepository
+    except Exception:  # noqa: BLE001
+        return
+    db = SessionLocal()
+    try:
+        opp_repo = OpportunityRepository(db)
+        notif_repo = NotificationRepository(db)
+        now = ist_now()
+        for status, silence_days in _FOLLOW_UP_SILENCE_DAYS.items():
+            for opp in opp_repo.list(status=status, page=1, page_size=10000):
+                touch = opp.updated_at or opp.posted_at or now
+                age_days = (now - touch).days
+                if age_days < silence_days:
+                    continue
+                title = f"Gig follow-up #{opp.id}: {(opp.title or 'Gig')[:45]}"
+                if notif_repo.exists_recent(title, hours=24 * 4):
+                    continue
+                label = opp.source_label or opp.source or "the platform"
+                message = (
+                    f"'{opp.title or 'Gig'}' on {label} has been silent for "
+                    f"{age_days} day{'s' if age_days != 1 else ''} since your "
+                    f"{status}.\n\n"
+                    f"Round-2 ping (copy & send):\n"
+                    f"\"Hi! Just bumping this in case it got lost \u2014 I can "
+                    f"start today if it helps, and I'll fit the scope to your "
+                    f"budget. Delivery stays 3\u20137 days.\"\n\n"
+                    f"{opp.url or ''}"
+                )
+                try:
+                    notify(db, title=title, message=message,
+                           type_=NotificationType.SYSTEM, link="/gig-radar")
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[Scheduler] Gig follow-up notification failed: {exc}")
+    finally:
+        db.close()
+
+
 def _run_tick() -> None:
     _generate_daily_summary()
     _generate_subscription_reminders()
@@ -205,6 +251,7 @@ def _run_tick() -> None:
     _process_custom_reminders()
     _generate_recurring_invoices()
     _collect_opportunities()
+    _check_gig_follow_ups()
 
 
 def _loop() -> None:

@@ -47,6 +47,16 @@ class OpportunityStats(BaseModel):
     drafted: int = 0
 
 
+class PipelineSummary(BaseModel):
+    new_count: int = 0
+    new_value: float = 0
+    active_count: int = 0
+    active_value_min: float = 0
+    active_value_max: float = 0
+    won_count: int = 0
+    won_value: float = 0
+
+
 class RefreshResult(BaseModel):
     added: int = 0
     updated: int = 0

@@ -185,6 +185,43 @@ def maybe_collect() -> Optional[dict]:
     return _collect_all_guarded(force=False)
 
 
+def pipeline_summary(db: Session) -> dict:
+    """Freelance pipeline value: active = applied+replied gigs (the ones you
+    are chasing right now), plus won and fresh-new totals. Values are the sum
+    of per-gig budgets (nulls skipped); mixed currencies are summed as-is, so
+    treat the number as an approximation."""
+    repo = OpportunityRepository(db)
+    rows = repo.list(page=1, page_size=10000)
+    counts = {"new": 0, "active": 0, "won": 0}
+    mins = {"new": 0.0, "active": 0.0, "won": 0.0}
+    maxs = {"active": 0.0}
+
+    for o in rows:
+        if o.status == "new":
+            bucket = "new"
+        elif o.status in ("applied", "replied"):
+            bucket = "active"
+        elif o.status == "won":
+            bucket = "won"
+        else:
+            continue
+        counts[bucket] += 1
+        if o.budget_min:
+            mins[bucket] += o.budget_min
+        if bucket == "active" and o.budget_max:
+            maxs[bucket] += o.budget_max
+
+    return {
+        "new_count": counts["new"],
+        "new_value": round(mins["new"]),
+        "active_count": counts["active"],
+        "active_value_min": round(mins["active"]),
+        "active_value_max": round(maxs["active"]),
+        "won_count": counts["won"],
+        "won_value": round(mins["won"]),
+    }
+
+
 # --------------------------------------------------------------------------- #
 # AI proposal draft
 # --------------------------------------------------------------------------- #

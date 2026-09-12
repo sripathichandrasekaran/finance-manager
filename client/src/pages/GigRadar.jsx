@@ -39,6 +39,7 @@ import StatCard from "../components/StatCard.jsx";
 import {
   fetchOpportunities,
   fetchOpportunityStats,
+  fetchPipeline,
   refreshRadar,
   updateOpportunity,
   deleteOpportunity,
@@ -109,9 +110,16 @@ function copyText(text) {
   }
 }
 
+function fmtDollar(v) {
+  if (!v || v <= 0) return "\u2014";
+  const n = Number(v);
+  if (n >= 1000) return `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+  return `$${Math.round(n).toLocaleString("en-IN")}`;
+}
+
 export default function GigRadar() {
   const dispatch = useDispatch();
-  const { items, total, stats, loading, refreshing, drafting } = useSelector(
+  const { items, total, stats, pipeline, loading, refreshing, drafting } = useSelector(
     (s) => s.opportunities
   );
 
@@ -138,6 +146,7 @@ export default function GigRadar() {
       })
     );
     dispatch(fetchOpportunityStats());
+    dispatch(fetchPipeline());
   };
 
   useEffect(() => {
@@ -274,6 +283,63 @@ export default function GigRadar() {
           <StatCard title="Total captured" value={stats.total} currency={false} icon={<RadarIcon />} loading={loading} />
         </Grid>
       </Grid>
+
+      {/* Freelance pipeline — gig budgets in play while you chase them */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: 13 }}>Freelance pipeline</Typography>
+            <Typography sx={{ fontSize: 11, color: "var(--fm-text-secondary)" }}>
+              approx \u00b7 from gig budgets \u00b7 mixed currencies as-is
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+              gap: 1.5,
+            }}
+          >
+            <Box sx={{ bgcolor: "var(--fm-bg-soft)", borderRadius: 2, p: 1.5 }}>
+              <Typography sx={{ fontSize: 11, color: "var(--fm-text-secondary)", mb: 0.5 }}>
+                Active \u2014 applied / replied
+              </Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: 16, color: "var(--fm-warning, #f59e0b)" }}>
+                {pipeline.active_count} gig{pipeline.active_count === 1 ? "" : "s"}
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)" }}>
+                {fmtDollar(pipeline.active_value_min)}
+                {pipeline.active_value_max > pipeline.active_value_min
+                  ? ` \u2013 ${fmtDollar(pipeline.active_value_max)}`
+                  : ""}{" "}
+                in play
+              </Typography>
+            </Box>
+            <Box sx={{ bgcolor: "var(--fm-bg-soft)", borderRadius: 2, p: 1.5 }}>
+              <Typography sx={{ fontSize: 11, color: "var(--fm-text-secondary)", mb: 0.5 }}>
+                Fresh \u2014 not yet applied
+              </Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: 16, color: "var(--fm-primary)" }}>
+                {pipeline.new_count} gig{pipeline.new_count === 1 ? "" : "s"}
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)" }}>
+                {fmtDollar(pipeline.new_value)} up for grabs
+              </Typography>
+            </Box>
+            <Box sx={{ bgcolor: "var(--fm-bg-soft)", borderRadius: 2, p: 1.5 }}>
+              <Typography sx={{ fontSize: 11, color: "var(--fm-text-secondary)", mb: 0.5 }}>
+                Won
+              </Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: 16, color: "var(--fm-success)" }}>
+                {pipeline.won_count} gig{pipeline.won_count === 1 ? "" : "s"}
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)" }}>
+                {fmtDollar(pipeline.won_value)} secured
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>

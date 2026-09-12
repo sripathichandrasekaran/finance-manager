@@ -7,6 +7,10 @@ const initialState = {
   stats: {
     total: 0, new: 0, applied: 0, replied: 0, won: 0, lost: 0, ignored: 0, drafted: 0,
   },
+  pipeline: {
+    new_count: 0, new_value: 0, active_count: 0,
+    active_value_min: 0, active_value_max: 0, won_count: 0, won_value: 0,
+  },
   loading: false,
   refreshing: false,
   drafting: false,
@@ -20,6 +24,11 @@ export const fetchOpportunities = createAsyncThunk("opportunities/fetch", async 
 
 export const fetchOpportunityStats = createAsyncThunk("opportunities/stats", async () => {
   const { data } = await axios.get("/opportunities/stats");
+  return data;
+});
+
+export const fetchPipeline = createAsyncThunk("opportunities/pipeline", async () => {
+  const { data } = await axios.get("/opportunities/pipeline");
   return data;
 });
 
@@ -89,6 +98,7 @@ const opportunitiesSlice = createSlice({
       })
       .addCase(fetchOpportunities.rejected, (state, action) => { state.error = action.payload; state.loading = false; })
       .addCase(fetchOpportunityStats.fulfilled, (state, action) => { state.stats = action.payload; })
+      .addCase(fetchPipeline.fulfilled, (state, action) => { state.pipeline = action.payload; })
       .addCase(refreshRadar.pending, (state) => { state.refreshing = true; })
       .addCase(refreshRadar.fulfilled, (state) => { state.refreshing = false; })
       .addCase(refreshRadar.rejected, (state, action) => { state.error = action.payload; state.refreshing = false; })
