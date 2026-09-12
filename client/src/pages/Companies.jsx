@@ -25,6 +25,10 @@ import Tooltip from "@mui/material/Tooltip";
 import LinearProgress from "@mui/material/LinearProgress";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -67,6 +71,8 @@ export default function Companies() {
   const [projectSummaries, setProjectSummaries] = useState({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [pulse, setPulse] = useState(null);
+  const [toast, setToast] = useState({ open: false, msg: "" });
 
   const formik = useFormik({
     initialValues: EMPTY,
@@ -153,6 +159,31 @@ export default function Companies() {
     }).catch(() => {});
   }, [items]);
 
+  useEffect(() => {
+    api.get("/companies/client-pulse").then((res) => {
+      setPulse(res.data || []);
+    }).catch(() => {});
+  }, []);
+
+  const pulseCounts = useMemo(() => {
+    const c = { hot: 0, active: 0, dormant: 0, cold: 0 };
+    (pulse || []).forEach((r) => {
+      if (r.tier in c) c[r.tier] += 1;
+    });
+    return c;
+  }, [pulse]);
+
+  const revivalNeeds = useMemo(
+    () => (pulse || []).filter((r) => r.revival_message),
+    [pulse]
+  );
+
+  const copyRevival = (c) => {
+    const text = c.revival_message || "";
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => {});
+    setToast({ open: true, msg: `Revival message copied for ${c.name} — paste in email or WhatsApp` });
+  };
+
   const openAdd = () => {
     setEditing(null);
     formik.resetForm();
@@ -213,6 +244,51 @@ export default function Companies() {
           </Button>
         }
       />
+
+      {pulse && pulse.length > 0 && (
+        <Card sx={{ mb: 2, border: "1px solid var(--fm-border)", borderRadius: "var(--fm-radius-md)" }}>
+          <CardContent>
+            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: revivalNeeds.length ? 1.5 : 0 }}>
+              <Box sx={{ mr: "auto", minWidth: 0 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <NotificationsActiveIcon sx={{ fontSize: 18, color: "var(--fm-warning, #f59e0b)" }} />
+                  Client pulse
+                </Typography>
+                <Typography variant="caption" sx={{ color: "var(--fm-text-secondary)", display: "block" }}>
+                  Who is paying you right now, and who went quiet — repeat clients are your cheapest work.
+                </Typography>
+              </Box>
+              <Chip size="small" label={`Hot ${pulseCounts.hot}`} color="success" variant="outlined" />
+              <Chip size="small" label={`Active ${pulseCounts.active}`} color="info" variant="outlined" />
+              <Chip size="small" label={`Dormant ${pulseCounts.dormant}`} color="warning" variant="outlined" />
+              <Chip size="small" label={`Cold ${pulseCounts.cold}`} color="error" variant="outlined" />
+            </Box>
+            {revivalNeeds.length > 0 && (
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1 }}>
+                {revivalNeeds.map((c) => (
+                  <Box key={c.company_id} sx={{ border: "1px solid var(--fm-border)", borderRadius: "var(--fm-radius-md)", p: 1.5, minWidth: 0 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</Typography>
+                      <Chip
+                        size="small"
+                        label={`${c.days_since_last_invoice}d silent`}
+                        sx={{ height: 18, flexShrink: 0, "& .MuiChip-label": { fontSize: 11, px: 1 } }}
+                        color={c.tier === "cold" ? "error" : "warning"}
+                      />
+                    </Box>
+                    <Typography variant="caption" sx={{ display: "block", color: "var(--fm-text-secondary)", mb: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {c.industry || "\u2014"} · ₹{(c.total_paid || 0).toLocaleString("en-IN")} paid already · {c.invoice_count} invoice{c.invoice_count === 1 ? "" : "s"} · last {c.last_invoice_date}
+                    </Typography>
+                    <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />} onClick={() => copyRevival(c)}>
+                      Copy revival message
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
@@ -485,6 +561,17 @@ export default function Companies() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast({ open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" variant="filled" onClose={() => setToast({ open: false })}>
+          {toast.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

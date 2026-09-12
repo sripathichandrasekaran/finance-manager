@@ -244,6 +244,35 @@ def _check_gig_follow_ups() -> None:
         db.close()
 
 
+def _check_client_revival() -> None:
+    """Remind to re-engage previously-paid clients that went quiet. Repeat
+    clients are the cheapest work a freelancer gets; a single nudge after
+    120+ days of silence is often all it takes. Weekly dedupe per client."""
+    try:
+        from app.services.client_pulse_service import clients_needing_revival
+    except Exception:  # noqa: BLE001
+        return
+    db = SessionLocal()
+    try:
+        notif_repo = NotificationRepository(db)
+        for row in clients_needing_revival(db):
+            title = f"Client revival: {row['name']} ({row['days_since_last_invoice']}d silent)"
+            if notif_repo.exists_recent(title, hours=24 * 7):
+                continue
+            message = (
+                f"{row['revival_message']}\n\n"
+                f"Open Companies, copy, and send \u2014 they already paid "
+                f"\u20b9{round(row['total_paid']):,} once."
+            )
+            try:
+                notify(db, title=title, message=message,
+                       type_=NotificationType.SYSTEM, link="/companies")
+            except Exception as exc:  # noqa: BLE001
+                print(f"[Scheduler] Client revival notification failed: {exc}")
+    finally:
+        db.close()
+
+
 def _run_tick() -> None:
     _generate_daily_summary()
     _generate_subscription_reminders()
@@ -252,6 +281,7 @@ def _run_tick() -> None:
     _generate_recurring_invoices()
     _collect_opportunities()
     _check_gig_follow_ups()
+    _check_client_revival()
 
 
 def _loop() -> None:

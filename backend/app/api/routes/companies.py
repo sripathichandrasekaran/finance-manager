@@ -192,3 +192,14 @@ def profit_summary(
         "active_companies": len([c for c in companies if c.active]),
         "total_companies": len(companies),
     }
+
+
+@router.get("/client-pulse")
+def client_pulse(db: Session = Depends(get_db)):
+    """Client Pulse — recency/affinity intelligence for freelancing clients:
+    who is hot, who is drifting, and a copy-paste revival message for each
+    dormant/cold client you should re-engage. Represents the cheapest revenue
+    a freelancer has (already-won clients)."""
+    from app.services.client_pulse_service import client_pulse_rows
+
+    return client_pulse_rows(db)
