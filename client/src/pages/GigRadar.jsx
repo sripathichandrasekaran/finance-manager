@@ -552,24 +552,35 @@ export default function GigRadar() {
             </Typography>
 
             <Box>
-              <Typography sx={{ fontWeight: 600, fontSize: 13, mb: 1 }}>Proposal draft</Typography>
+              <Typography sx={{ fontWeight: 600, fontSize: 13 }}>Proposal draft</Typography>
+              <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)", mt: 0.5, mb: 1.25 }}>
+                Write a tailored proposal with AI, or write your own here.
+              </Typography>
               <TextField
                 multiline
-                minRows={5}
-                maxRows={12}
+                minRows={6}
                 fullWidth
-                size="small"
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
-                placeholder="Generate a tailored proposal with AI, or write your own here."
                 disabled={drafting}
+                sx={{
+                  "& .MuiInputBase-root": {
+                    alignItems: "flex-start",
+                    minHeight: 120,
+                  },
+                  "& textarea": {
+                    p: "12px 14px",
+                    maxHeight: 320,
+                    overflowY: "auto",
+                    boxSizing: "border-box",
+                  },
+                }}
               />
               <Box
                 sx={{
                   display: "flex",
                   gap: 1,
-                  mt: 1.5,
-                  mb: 0.5,
+                  mt: 2,
                   flexWrap: "wrap",
                   alignItems: "center",
                 }}
@@ -591,7 +602,7 @@ export default function GigRadar() {
               </Box>
             </Box>
 
-            <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)", mb: 0.5 }}>
+            <Typography sx={{ fontSize: 12, color: "var(--fm-text-secondary)", mt: 3, mb: 0.5 }}>
               Status here is tracked only inside this app. To actually apply, hit{" "}
               <b>Apply</b> below \u2014 it copies your draft and opens the gig on{" "}
               {detail?.source_label || "the platform"} where you paste it in.
